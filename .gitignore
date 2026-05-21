@@ -1,0 +1,19 @@
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+*.xcodeproj/
+*.xcworkspace/
+
+# macOS
+.DS_Store
+*.swp
+
+# App bundles produced by local build scripts (M5)
+*.app/
+
+# Code signing (M5: setup-signing-cert.sh writes the identity name here)
+.signing-id
+
+# Logs (local dev)
+/tmp/*.log
