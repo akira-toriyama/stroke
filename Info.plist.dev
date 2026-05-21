@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Info.plist for the LOCAL dev build only. Selected by `package.sh --dev`
+  (called from run.sh). Keeps a separate CFBundleIdentifier so the dev
+  build and a co-installed Homebrew release can each hold their own
+  Accessibility grant — no re-prompts when switching between them.
+  CFBundleExecutable stays `stroke` (same binary).
+-->
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
-  <string>com.stroke.stroke</string>
+  <string>com.stroke.stroke.dev</string>
   <key>CFBundleName</key>
-  <string>stroke</string>
+  <string>stroke (dev)</string>
+  <key>CFBundleDisplayName</key>
+  <string>stroke (dev)</string>
   <key>CFBundleExecutable</key>
   <string>stroke</string>
   <key>CFBundlePackageType</key>
@@ -22,6 +31,6 @@
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
   <key>NSAccessibilityUsageDescription</key>
-  <string>stroke needs Accessibility access to read the window under the cursor (the cursor-anchored target) and to dispatch keystrokes / window actions to that exact window.</string>
+  <string>stroke (dev) needs Accessibility access to read the window under the cursor and dispatch actions to it.</string>
 </dict>
 </plist>
