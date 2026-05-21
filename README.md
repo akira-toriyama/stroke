@@ -3,7 +3,7 @@
 ![platform](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey)
 ![swift](https://img.shields.io/badge/Swift-6.0-orange)
 ![license](https://img.shields.io/badge/license-MIT-blue)
-![status](https://img.shields.io/badge/status-M4%20ipc%20%2B%20recorder-orange)
+![status](https://img.shields.io/badge/status-M5%20packaged-brightgreen)
 
 **English** · [日本語](README.ja.md)
 
@@ -19,15 +19,11 @@ See [Why stroke exists](#why-stroke-exists) below.
 
 ## Status
 
-**M4 — live reload, interactive recorder, IPC.** Edit
-`~/.config/stroke/config.toml`, run `stroke --reload`, and the
-running daemon swaps in the new rules without losing its event tap
-or AX grant. `stroke --record` opens an interactive recorder
-(`pattern=DR  samples=421  max|dx|=180 max|dy|=92  target=...`) so
-you can dial in a new gesture before committing it to the file.
-`stroke --quit` shuts the daemon down cleanly. Client commands
-refuse with exit 3 if no daemon is running; `--record` refuses
-with exit 3 if one is.
+**M5 — packaged.** `Stroke.app` bundle, persistent self-signed cert
+for stable Accessibility grants across rebuilds / `brew upgrade`,
+Homebrew formula at `akira-toriyama/homebrew-tap`, release pipeline
+that builds + zips on every push to main and attaches the artifact
+to a rolling DRAFT release.
 
 | Milestone | Status |
 |---|---|
@@ -35,7 +31,7 @@ with exit 3 if one is.
 | M2 — CGEventTap captures real strokes; `key` / `shell` actions fire | ✅ |
 | M3 — AX cursor-anchored target resolution (the issue #115 fix); `ax` actions | ✅ |
 | M4 — `--reload`, `--record`, `--quit` | ✅ |
-| M5 — Homebrew tap, signed bundle | ⏳ |
+| M5 — Homebrew tap, `.app` bundle, persistent codesign | ✅ |
 
 ## Why stroke exists
 
@@ -52,20 +48,33 @@ churn, `key` actions raise it first, `shell` actions get the target
 identity passed through as environment variables. The cursor is
 ground truth.
 
+## Install
+
+```sh
+brew install akira-toriyama/tap/stroke
+curl --create-dirs -o ~/.config/stroke/config.toml \
+  https://raw.githubusercontent.com/akira-toriyama/stroke/main/config.toml
+open "$(brew --prefix)/opt/stroke/Stroke.app"   # triggers AX prompt
+```
+
+Then grant **Accessibility** to *stroke* (System Settings → Privacy
+& Security → Accessibility) and launch the daemon with `stroke`.
+
+The formula bundles a `Stroke.app` (LSUIElement — no Dock icon) plus
+a stable self-signed code-signing identity created in your login
+keychain on first install, so the Accessibility grant persists across
+`brew upgrade stroke`. If the keychain isn't reachable during install,
+the formula falls back to ad-hoc signing and prints a loud warning
+with a one-line recovery path. Details:
+[packaging/homebrew/](packaging/homebrew/).
+
 ## Configuration
 
 stroke is **config.toml-driven** — there is no settings GUI by
-design. Drop a copy of [`config.toml`](config.toml) at
-`~/.config/stroke/config.toml`:
-
-```sh
-curl --create-dirs -o ~/.config/stroke/config.toml \
-  https://raw.githubusercontent.com/akira-toriyama/stroke/main/config.toml
-```
-
-Out-of-range / unknown values clamp silently to defaults — a typo
-can never break the daemon. Validate explicitly with
-`stroke --validate`.
+design. The `curl` line above drops the template at
+`~/.config/stroke/config.toml`. Out-of-range / unknown values clamp
+silently to defaults — a typo can never break the daemon. Validate
+explicitly with `stroke --validate`.
 
 A rule looks like this:
 
@@ -131,6 +140,17 @@ Enable the local hook with `git config core.hooksPath scripts/hooks`.
 swift build                       # compile (CommandLineTools is enough)
 swift test                        # needs Xcode for XCTest
 .build/debug/stroke --help        # smoke test
+```
+
+For a local `Stroke.app` with persistent Accessibility grant:
+
+```sh
+./setup-signing-cert.sh           # once — creates stable self-signed cert
+./run.sh                          # ./package.sh + open Stroke.app
+./run.sh --dev                    # → Stroke-dev.app (com.stroke.stroke.dev)
+                                  #   for parallel testing alongside a
+                                  #   Homebrew install without TCC collision
+./stop.sh                         # kill everything stroke
 ```
 
 ## License
