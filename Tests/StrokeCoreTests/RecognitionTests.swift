@@ -9,12 +9,21 @@ import CoreGraphics
 final class RecognitionTests: XCTestCase {
 
     func testStraightDownThenRight() {
-        let samples = (0...20).map { i in
-            Sample(p: CGPoint(x: 0, y: -CGFloat(i) * 5), t: TimeInterval(i) * 0.01)
-        } + (1...20).map { i in
-            Sample(p: CGPoint(x: CGFloat(i) * 5, y: -100), t: TimeInterval(20 + i) * 0.01)
+        // Explicit `[Sample]` annotation needed — without it Swift 6's
+        // type checker bails on the two chained closures + `+`
+        // ("compiler is unable to type-check this expression in
+        // reasonable time"). Annotating breaks the inference into two
+        // independent sub-problems.
+        let down: [Sample] = (0...20).map { i in
+            Sample(p: CGPoint(x: 0, y: -CGFloat(i) * 5),
+                   t: TimeInterval(i) * 0.01)
         }
-        let dirs = Recognition.recognize(samples: samples, minStrokePx: 16)
+        let right: [Sample] = (1...20).map { i in
+            Sample(p: CGPoint(x: CGFloat(i) * 5, y: -100),
+                   t: TimeInterval(20 + i) * 0.01)
+        }
+        let dirs = Recognition.recognize(samples: down + right,
+                                          minStrokePx: 16)
         XCTAssertEqual(dirs.patternString, "DR")
     }
 
