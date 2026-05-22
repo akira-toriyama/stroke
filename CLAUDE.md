@@ -151,26 +151,91 @@ Everything below depends on this contract:
   It costs one bool check when disabled. Skip per-sample logging
   (mouse-moved fires too often even with the gate).
 
+### Debugging — how Claude Code observes a running daemon
+
+stroke is **headless** (`LSUIElement`, no Dock icon, no window).
+The agent cannot "look at the screen" to see what it's doing — so
+the daemon is built to be debuggable entirely from the terminal.
+The workflow:
+
+1. **Run in the foreground with `--debug`** so events stream live:
+   `.build/debug/stroke --debug`. This sets `debugMode = true`
+   (enables `Log.debug`) and mirrors every log line to stderr in
+   addition to `/tmp/stroke.log`.
+2. **Tail the log** from a second shell: `tail -f /tmp/stroke.log`.
+   This is the single source of observability — there is nothing
+   else to inspect.
+3. **Read the trace.** A gesture that fires end-to-end logs, in
+   order:
+   ```
+   event-tap: down at (x,y) → target=com.google.Chrome
+   event-tap: up — samples=512, pattern=DR
+   controller: recognised DR on com.google.Chrome
+   controller: → rule "close tab"
+   dispatch.key: cmd+w → com.google.Chrome (pid …, wid …)
+   ```
+   Each missing line localises the failure to one stage
+   (capture → recognition → match → dispatch).
+4. **Interpret the diagnostics** in the "no stroke recognised" line
+   (`samples=N, max|dx|=…, max|dy|=…, threshold=…`):
+   - `samples=1` → the drag never streamed; the user clicked
+     without moving, **or** a virtual-HID layer is eating
+     `.rightMouseDragged` (see below).
+   - `max|dx|`/`max|dy|` both `< threshold` → real motion but too
+     small; raise sensitivity or draw bigger.
+   - `target=nil` (with a recognised pattern) → cursor was over a
+     non-AX surface (Dock, menu bar, desktop); the gesture is
+     dropped on purpose.
+5. **Isolate recognition** with `stroke --record` — it streams
+   `pattern=… samples=… max|dx|=… target=…` to stdout for every
+   stroke and fires **no actions**, so you can confirm the
+   capture+recognition half without side effects. (Refuses if the
+   daemon is already running — they'd fight over the tap.)
+6. **Check config** with `stroke --validate` (exit 0 + rule count,
+   or exit 2).
+
+**Known external interference to suspect first:** virtual-HID
+remappers (Karabiner-Elements, Logitech Options, some KVMs) can
+deliver button-held motion as `.mouseMoved` instead of
+`.rightMouseDragged`, or swallow the drag entirely. The classic
+symptom is `samples=1` on every stroke. stroke masks `.mouseMoved`
+to survive this; if a new "no samples" report appears, check
+what's intercepting the HID stream before touching the tap code.
+
+**AX grant after rebuild:** `swift build` ad-hoc re-signs the
+binary, which can drop the Accessibility grant — the symptom is
+`event-tap: tapCreate failed` in the log and no events at all.
+Re-grant in System Settings, or use the persistent cert
+(`setup-signing-cert.sh`) so the grant survives. Use
+`pgrep -lf stroke` to see what's running and `./stop.sh` to clear
+stray instances before relaunching.
+
 ### Bundle / signing
 
 - **Bundle id is `com.stroke.stroke`** (set in
   [Info.plist](Info.plist)). TCC keys the Accessibility grant
   to the code-signing identity, so ad-hoc signing loses the
-  grant on every rebuild. A `setup-signing-cert.sh` script
-  (lands in M5) will create a persistent self-signed cert so
-  the grant survives rebuilds — same pattern as facet.
+  grant on every rebuild. [setup-signing-cert.sh](setup-signing-cert.sh)
+  creates a persistent self-signed cert so the grant survives
+  rebuilds; [package.sh](package.sh) assembles `Stroke.app` and
+  signs it with that identity (`--dev` →
+  `Stroke-dev.app` / `com.stroke.stroke.dev` to co-exist with a
+  Homebrew install without TCC collision). Same pattern as facet.
 - **`LSUIElement = true`** — no Dock icon, no menubar item. The
   daemon is intentionally invisible.
 
 ### CLI surface
 
-- **`--validate`, `--debug`, `--help` are the only M1 flags**.
-  Anything else exits `2` with a stderr message (no silent
-  fallback — facet's *Rule of Repair* discipline).
-- **`--record`, `--reload`, `--quit` land in M2/M4**. They will
-  use Distributed Notification Center IPC to talk to the
-  running daemon — same pattern as facet's
-  `controller.installCLIControl`. Don't invent a different IPC.
+- **Flags**: `--debug` (server, verbose), `--validate` /
+  `--record` / `--help` (standalone), `--reload` / `--quit`
+  (client). Any unrecognised flag exits `2` with a stderr message
+  (no silent fallback — facet's *Rule of Repair* discipline).
+- **`--reload` / `--quit` talk to the running daemon over
+  Distributed Notification Center** (`com.stroke.app.control`,
+  see [Sources/StrokeApp/Control.swift](Sources/StrokeApp/Control.swift)
+  + `Controller.installCLIControl`) — same pattern as facet.
+  Don't invent a different IPC. They exit `3` if no daemon is
+  running; `--record` exits `3` if one *is* (tap conflict).
 
 ## Conventions
 
