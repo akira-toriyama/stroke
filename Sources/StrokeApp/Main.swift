@@ -42,9 +42,10 @@ enum StrokeApp {
 
         CLIENT COMMANDS (talk to a running stroke daemon)
           stroke --reload              re-read ~/.config/stroke/config.toml
-                                       without restarting (rules + excludes
-                                       only; trigger/minStrokePx need a
-                                       full restart)
+                                       without restarting (also automatic
+                                       on file save; rules + excludes only —
+                                       trigger/minStrokePx need a full restart)
+          stroke --status              print rule count, trigger, last gesture
           stroke --quit                terminate the running daemon
 
         STANDALONE COMMANDS
@@ -85,7 +86,7 @@ enum StrokeApp {
         // policy must hold even when flags are combined).
         let recognised: Set<String> = [
             "--help", "--debug", "--validate", "--record",
-            "--reload", "--quit",
+            "--reload", "--quit", "--status",
         ]
         for a in argv where !recognised.contains(a) {
             let msg = "stroke: unknown flag \"\(a)\" — see "
@@ -107,6 +108,7 @@ enum StrokeApp {
         if argv.contains("--record") { runRecord() }
 
         // Client commands — require a running daemon.
+        if argv.contains("--status") { runStatus() }
         if argv.contains("--reload") { runClient(cmd: "reload") }
         if argv.contains("--quit")   { runClient(cmd: "quit") }
 
@@ -178,7 +180,34 @@ enum StrokeApp {
         let controller = Controller(source: source, config: cfg)
         controller.start()
 
+        // Live-reload on config edits (no `--reload` needed). Held for
+        // the process lifetime via `app.run()`.
+        let watcher = ConfigWatcher(path: StrokeConfig.path) {
+            Log.line("config: file changed — reloading")
+            controller.reload()
+        }
+        watcher.start()
+
         app.run()
+        exit(0)
+    }
+
+    // MARK: - Status
+
+    /// Print the running daemon's status (rule count, trigger, last
+    /// gesture …) from the status file it maintains. Exit 3 if no
+    /// daemon is running.
+    private static func runStatus() -> Never {
+        guard isServerRunning() else {
+            FileHandle.standardError.write(Data(
+                "stroke: no daemon running\n".utf8))
+            exit(3)
+        }
+        if let s = try? String(contentsOfFile: statusPath, encoding: .utf8) {
+            print(s)
+        } else {
+            print("stroke: running (status file not written yet)")
+        }
         exit(0)
     }
 
@@ -267,12 +296,30 @@ enum StrokeApp {
         source.start { event in
             let dirs = Recognition.recognize(samples: event.samples,
                                               minStrokePx: cfg.minStrokePx)
-            let pattern = dirs.isEmpty ? "(too short)" : dirs.patternString
             let (dx, dy) = event.samples.span
-            let line = "pattern=\(pattern)  samples=\(event.samples.count)"
-                + "  max|dx|=\(Int(dx)) max|dy|=\(Int(dy))"
-                + "  target=\(event.target.bundleID)\n"
-            FileHandle.standardOutput.write(Data(line.utf8))
+            guard !dirs.isEmpty else {
+                FileHandle.standardOutput.write(Data((
+                    "(too short)  samples=\(event.samples.count)  "
+                    + "max|dx|=\(Int(dx)) max|dy|=\(Int(dy))\n"
+                ).utf8))
+                return
+            }
+            let pattern = dirs.patternString
+            // A paste-ready rule skeleton: pattern + the exact target
+            // bundle id pre-filled; the user picks an action.
+            let snippet = """
+            pattern=\(pattern)  samples=\(event.samples.count)  \
+            max|dx|=\(Int(dx)) max|dy|=\(Int(dy))  target=\(event.target.bundleID)
+
+            [[rules]]
+            name = "\(pattern)"
+            pattern = "\(pattern)"
+            apps = ["\(event.target.bundleID)"]
+            action-type = "key"        # key | ax | shell
+            action-keys = "cmd+w"      # ← edit me
+
+            """
+            FileHandle.standardOutput.write(Data(snippet.utf8))
         }
 
         FileHandle.standardError.write(Data((

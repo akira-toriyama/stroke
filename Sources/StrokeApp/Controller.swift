@@ -24,6 +24,8 @@ public final class Controller: @unchecked Sendable {
     /// reload takes effect on the very next stroke without
     /// reinstalling the event tap.
     private var config: StrokeConfig
+    /// Last recognised gesture, for `stroke --status`.
+    private var lastGesture: String?
 
     public init(source: MouseSource, config: StrokeConfig) {
         self.source = source
@@ -38,6 +40,7 @@ public final class Controller: @unchecked Sendable {
             self?.handle(event)
         }
         installCLIControl()
+        writeStatus()
     }
 
     public func stop() { source.stop() }
@@ -59,10 +62,12 @@ public final class Controller: @unchecked Sendable {
         }
         let pattern = dirs.patternString
         Log.line("controller: recognised \(pattern) on \(target.bundleID)")
-        guard let rule = Matcher.match(pattern: pattern,
-                                       bundleID: target.bundleID,
-                                       rules: cfg.rules)
-        else {
+        let rule = Matcher.match(pattern: pattern, bundleID: target.bundleID,
+                                 rules: cfg.rules)
+        lastGesture = "\(pattern) on \(target.bundleID)"
+            + (rule.map { " → \"\($0.name)\"" } ?? " (no rule)")
+        writeStatus()
+        guard let rule else {
             Log.debug("controller: no rule matched \(pattern) / \(target.bundleID)")
             return
         }
@@ -87,6 +92,22 @@ public final class Controller: @unchecked Sendable {
         }
         config = new
         Log.line("controller: reload — \(oldRules) → \(newRules) rule(s)")
+        writeStatus()
+    }
+
+    // MARK: - Status file (for `stroke --status`)
+
+    private func writeStatus() {
+        let s = """
+        pid=\(ProcessInfo.processInfo.processIdentifier)
+        rules=\(config.rules.count)
+        trigger=\(config.trigger.button.rawValue)
+        min-stroke-px=\(config.minStrokePx)
+        max-stroke-ms=\(config.maxStrokeMs)
+        overlay=\(config.overlayEnabled ? "on" : "off")
+        last=\(lastGesture ?? "(none yet)")
+        """
+        try? s.write(toFile: statusPath, atomically: true, encoding: .utf8)
     }
 
     // MARK: - CLI ↔ daemon IPC
