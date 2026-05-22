@@ -97,6 +97,11 @@ axis directions are not recognised yet. App filters support
 keystroke), `ax` (`close` / `minimize` / `zoom` / `raise`), and
 `shell` (any command).
 
+`[recognition] max-stroke-ms` caps how long a gesture may take —
+draw slower than that and it's abandoned (so an ordinary deliberate
+right-drag isn't read as a gesture). `0` (default) = no limit; the
+trail turns the no-match color once you've run past the budget.
+
 ## CLI
 
 ```sh

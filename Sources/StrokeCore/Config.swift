@@ -12,6 +12,11 @@ import Foundation
 public struct StrokeConfig: Sendable {
     public var trigger: Trigger
     public var minStrokePx: Int
+    /// Maximum time (ms) from button-down to button-up for a stroke to
+    /// still count as a gesture. A slower drag is abandoned (no
+    /// action). `0` = no limit. Lets you right-drag normally without
+    /// it being read as a gesture, as long as you take your time.
+    public var maxStrokeMs: Int
     public var sampleHz: Int
     public var excludeApps: [String]
     public var rules: [Rule]
@@ -29,6 +34,7 @@ public struct StrokeConfig: Sendable {
     public static let `default` = StrokeConfig(
         trigger: Trigger(button: .right, modifiers: []),
         minStrokePx: 16,
+        maxStrokeMs: 0,
         sampleHz: 120,
         excludeApps: [],
         rules: [],
@@ -65,6 +71,8 @@ public struct StrokeConfig: Sendable {
         // breaking recognition (the rule still loads, just bounded).
         let reco = doc.tables["recognition"] ?? [:]
         let minPx = max(4, min(200, reco.int("min-stroke-px", 16)))
+        // 0 = no limit; otherwise clamp to a sane 100ms..60s window.
+        let maxMs = { let m = reco.int("max-stroke-ms", 0); return m <= 0 ? 0 : max(100, min(60000, m)) }()
         let hz = max(30, min(240, reco.int("sample-hz", 120)))
         let excludes = reco.strings("exclude-apps")
 
@@ -91,6 +99,7 @@ public struct StrokeConfig: Sendable {
         return StrokeConfig(
             trigger: Trigger(button: button, modifiers: mods),
             minStrokePx: minPx,
+            maxStrokeMs: maxMs,
             sampleHz: hz,
             excludeApps: excludes,
             rules: rules,

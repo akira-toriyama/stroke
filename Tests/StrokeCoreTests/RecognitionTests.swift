@@ -153,6 +153,16 @@ final class RecognitionTests: XCTestCase {
         XCTAssertEqual(cfg.overlayWidth, 40)       // clamped 1..40
     }
 
+    func testMaxStrokeMs() {
+        XCTAssertEqual(StrokeConfig.parse("").maxStrokeMs, 0)               // default off
+        XCTAssertEqual(StrokeConfig.parse(
+            "[recognition]\nmax-stroke-ms = 1500").maxStrokeMs, 1500)
+        XCTAssertEqual(StrokeConfig.parse(
+            "[recognition]\nmax-stroke-ms = 50").maxStrokeMs, 100)          // clamp low
+        XCTAssertEqual(StrokeConfig.parse(
+            "[recognition]\nmax-stroke-ms = 999999").maxStrokeMs, 60000)    // clamp high
+    }
+
     func testRuleNameDefaultsToPattern() {
         let toml = """
         [[rules]]

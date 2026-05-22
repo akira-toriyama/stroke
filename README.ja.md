@@ -91,6 +91,11 @@ action-keys = "cmd+w"
 `!` による除外をサポート。アクション種別は `key`(キーストローク)、
 `ax`(`close` / `minimize` / `zoom` / `raise`)、`shell`(任意コマンド)。
 
+`[recognition] max-stroke-ms` でジェスチャーの制限時間を設定 —
+これより遅く描くと破棄される(通常の意図的な右ドラッグがジェスチャー
+と誤認されない)。`0`(既定)= 無制限。時間を超えると軌跡が no-match
+色に変わる。
+
 ## CLI
 
 ```sh

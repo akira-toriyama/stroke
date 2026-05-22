@@ -41,6 +41,12 @@ modifiers = []
 # tolerant of jitter. Clamped 4..200.
 min-stroke-px = 16
 
+# Maximum time (ms) from button-down to button-up for a stroke to
+# count as a gesture. Draw slower than this and it's abandoned (no
+# action fires) — handy so an ordinary, deliberate right-drag isn't
+# read as a gesture. 0 = no limit. Clamped 100..60000 when set.
+max-stroke-ms = 0
+
 # Sampling cadence. Clamped 30..240.
 sample-hz = 120
 

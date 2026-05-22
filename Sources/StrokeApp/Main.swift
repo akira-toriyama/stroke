@@ -126,7 +126,8 @@ enum StrokeApp {
 
         let source = MacOSMouseSource(
             trigger: cfg.trigger,
-            minStrokePx: cfg.minStrokePx
+            minStrokePx: cfg.minStrokePx,
+            maxStrokeMs: cfg.maxStrokeMs
         )
 
         // Gesture-trail overlay (passive observer of the sample
@@ -146,11 +147,14 @@ enum StrokeApp {
             // the trail is "valid" (match color) when the shape so far
             // is empty (just started) or exactly matches a rule for the
             // cursor-anchored target; "no match" once it forms a shape
-            // no rule wants, or the app is excluded.
-            source.onSample = { point, pattern, bundleID in
+            // no rule wants, the app is excluded, or the stroke has
+            // already run past maxStrokeMs (so the user sees it won't
+            // fire).
+            source.onSample = { point, pattern, bundleID, expired in
                 var valid = false
                 var label: String? = nil
-                if !Matcher.isExcluded(bundleID: bundleID, by: excludes) {
+                if !expired,
+                   !Matcher.isExcluded(bundleID: bundleID, by: excludes) {
                     if pattern.isEmpty {
                         valid = true                 // just started — neutral
                     } else if let rule = Matcher.match(pattern: pattern,
