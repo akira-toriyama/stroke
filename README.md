@@ -64,6 +64,12 @@ open "$(brew --prefix)/opt/stroke/Stroke.app"   # triggers AX prompt
 Then grant **Accessibility** to *stroke* (System Settings → Privacy
 & Security → Accessibility) and launch the daemon with `stroke`.
 
+To start it automatically at login:
+
+```sh
+brew services start stroke
+```
+
 The formula bundles a `Stroke.app` (LSUIElement — no Dock icon) plus
 a stable self-signed code-signing identity created in your login
 keychain on first install, so the Accessibility grant persists across
@@ -109,15 +115,18 @@ stroke                    # run as agent (CGEventTap loop)
 stroke --debug            # verbose log to /tmp/stroke.log + stderr
 
 stroke --validate         # parse config.toml, exit 0/2
-stroke --record           # interactive recorder — draw, see the
-                          # pattern + sample count + span on stdout
+stroke --record           # interactive recorder — draw a gesture, get a
+                          # paste-ready [[rules]] snippet on stdout
 
-stroke --reload           # tell the running daemon to re-read config.toml
+stroke --status           # rule count, trigger, last gesture
+stroke --reload           # re-read config.toml (also automatic on save)
 stroke --quit             # terminate the running daemon
 stroke --help
 ```
 
-`--reload` and `--quit` are client commands — they exit 3 with a
+The daemon **auto-reloads `config.toml` on save** — `--reload` is the
+manual trigger if you need it. `--reload` / `--status` / `--quit` are
+client commands — they exit 3 with a
 helpful message if the daemon isn't running. `--record` is the
 reverse — it refuses if the daemon *is* running, because both
 would fight over the same CGEventTap.

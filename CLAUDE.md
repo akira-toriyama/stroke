@@ -238,15 +238,31 @@ stray instances before relaunching.
 ### CLI surface
 
 - **Flags**: `--debug` (server, verbose), `--validate` /
-  `--record` / `--help` (standalone), `--reload` / `--quit`
-  (client). Any unrecognised flag exits `2` with a stderr message
-  (no silent fallback — facet's *Rule of Repair* discipline).
+  `--record` / `--help` (standalone), `--reload` / `--quit` /
+  `--status` (client). Any unrecognised flag exits `2` with a
+  stderr message (no silent fallback — facet's *Rule of Repair*
+  discipline).
 - **`--reload` / `--quit` talk to the running daemon over
   Distributed Notification Center** (`com.stroke.app.control`,
   see [Sources/StrokeApp/Control.swift](Sources/StrokeApp/Control.swift)
   + `Controller.installCLIControl`) — same pattern as facet.
   Don't invent a different IPC. They exit `3` if no daemon is
   running; `--record` exits `3` if one *is* (tap conflict).
+- **`--status` is one-way the other direction**: DNC can't reply, so
+  the daemon rewrites a small status file (`statusPath` =
+  `/tmp/stroke.status`) on start / reload / each recognised gesture,
+  and `--status` just reads it. Don't reach for a request/response
+  IPC — the file is enough.
+- **Config auto-reload**: `ConfigWatcher`
+  ([Sources/StrokeApp/ConfigWatcher.swift](Sources/StrokeApp/ConfigWatcher.swift))
+  watches `StrokeConfig.path` with a `DispatchSource` vnode source
+  and calls `controller.reload()` on edit (debounced; re-arms on the
+  atomic-save rename/delete). `--reload` is now just the manual
+  trigger for the same path.
+- **Login auto-start**: the Homebrew formula's `service do` block
+  (`brew services start stroke`) runs the bundle's executable via
+  launchd; `keep_alive` is safe because an un-granted start doesn't
+  crash (the app loop stays up).
 
 ## Conventions
 

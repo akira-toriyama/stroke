@@ -60,6 +60,12 @@ open "$(brew --prefix)/opt/stroke/Stroke.app"   # AX プロンプトが出る
 System Settings → Privacy & Security → Accessibility で *stroke* に
 権限付与、その後 `stroke` でデーモン起動。
 
+ログイン時に自動起動するには:
+
+```sh
+brew services start stroke
+```
+
 formula は `Stroke.app`(LSUIElement = Dock アイコンなし)を同梱、
 ログインキーチェーンに永続自己署名証明書を作成するので、
 `brew upgrade stroke` でも AX 権限が剥がれない。インストール中に
@@ -103,15 +109,17 @@ stroke                    # agent として常駐(CGEventTap loop)
 stroke --debug            # 詳細ログを /tmp/stroke.log + stderr へ
 
 stroke --validate         # config.toml をパース、0 / 2 で exit
-stroke --record           # 対話型レコーダ — 描くと pattern + サンプル数
-                          # + 変位幅が stdout に出る
+stroke --record           # 対話型レコーダ — 描くと貼れる [[rules]]
+                          # スニペットが stdout に出る
 
-stroke --reload           # 動作中の daemon に config.toml の再読込を依頼
+stroke --status           # ルール数・トリガー・最後のジェスチャー
+stroke --reload           # config.toml 再読込(保存時に自動でも走る)
 stroke --quit             # 動作中の daemon を終了
 stroke --help
 ```
 
-`--reload` / `--quit` はクライアントコマンド —
+daemon は **config.toml を保存時に自動リロード**する(`--reload` は手動
+トリガー)。`--reload` / `--status` / `--quit` はクライアントコマンド —
 daemon が居なければ exit 3 で拒否。
 `--record` は逆に、daemon が **居れば** 拒否
 (同じ CGEventTap を取り合うため)。

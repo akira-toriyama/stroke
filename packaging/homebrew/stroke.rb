@@ -78,6 +78,19 @@ class Stroke < Formula
     bin.install_symlink app/"Contents/MacOS/stroke" => "stroke"
   end
 
+  # `brew services start stroke` → a LaunchAgent that runs the daemon at
+  # login. Runs the executable inside the bundle so TCC keys the
+  # Accessibility grant to the same (persistent self-signed) identity
+  # the user granted to Stroke.app. keep_alive restarts it if it dies;
+  # an un-granted start doesn't crash (the app loop stays up), so this
+  # won't hot-loop while the user is granting AX.
+  service do
+    run [opt_prefix/"Stroke.app/Contents/MacOS/stroke"]
+    keep_alive true
+    log_path var/"log/stroke.log"
+    error_log_path var/"log/stroke.log"
+  end
+
   def caveats
     <<~EOS
       stroke is a global mouse-gesture daemon (LSUIElement, no Dock icon).
@@ -102,8 +115,11 @@ class Stroke < Formula
         stroke --reload      re-read config.toml live
         stroke --quit        terminate the running daemon
 
-      Auto-start on login (optional):
-        Add #{opt_prefix}/Stroke.app to System Settings → General → Login Items.
+      Auto-start on login:
+        brew services start stroke
+        (or add #{opt_prefix}/Stroke.app to System Settings → General →
+        Login Items). Grant Accessibility to "stroke" first, or the
+        background daemon can't tap mouse events.
 
       Persistent Accessibility grants across `brew upgrade` need a stable
       code-signing identity. The install creates one automatically when it

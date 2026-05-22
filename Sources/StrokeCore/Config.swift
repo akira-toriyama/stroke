@@ -44,11 +44,14 @@ public struct StrokeConfig: Sendable {
         overlayWidth: 3
     )
 
+    /// The single source-of-truth path. Shared by `load()` and the
+    /// app's file watcher so both point at the same file.
+    public static let path = NSString(string: "~/.config/stroke/config.toml")
+        .expandingTildeInPath
+
     /// Read ~/.config/stroke/config.toml. Missing file → defaults,
     /// no error (same agent-friendly behaviour as facet).
     public static func load() -> StrokeConfig {
-        let path = NSString(string: "~/.config/stroke/config.toml")
-            .expandingTildeInPath
         guard let text = try? String(contentsOfFile: path, encoding: .utf8)
         else {
             Log.line("config: no file at \(path) — using built-in defaults")
