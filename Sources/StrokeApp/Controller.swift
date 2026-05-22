@@ -11,6 +11,11 @@ import Foundation
 import StrokeCore
 import StrokeAdapterMacOS
 
+// `@unchecked Sendable`: the only mutable state (`config`) is read
+// and written exclusively on the main thread — the stroke handler
+// runs on the event-tap callback (main run loop) and `reload()` is
+// invoked from the main-queue DNC observer. No cross-thread access,
+// so no lock is needed.
 public final class Controller: @unchecked Sendable {
 
     private let source: MouseSource
