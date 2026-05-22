@@ -130,10 +130,12 @@ public enum AXTarget {
         let windowID: UInt32
     }
 
-    /// (key, element) pairs in insertion order. Capped at `maxLive`
-    /// with FIFO eviction — strokes happen at most a few times per
-    /// second, so 64 covers many seconds of history easily. Keeps
-    /// memory bounded without needing a real LRU implementation.
+    /// (key, element) pairs ordered least-recently-touched first.
+    /// `register` removes any existing entry for the key and appends,
+    /// so re-touching a key moves it to the tail; eviction drops from
+    /// the front — i.e. LRU, capped at `maxLive`. Strokes happen at
+    /// most a few times per second, so 64 covers many seconds of
+    /// history and the O(n) scan over a 64-element array is free.
     private nonisolated(unsafe) static var liveElements: [(SideKey, AXUIElement)] = []
     private static let maxLive = 64
 

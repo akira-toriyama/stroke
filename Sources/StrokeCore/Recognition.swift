@@ -33,10 +33,10 @@ public enum Recognition {
             if absX >= absY {
                 dir = dx >= 0 ? .right : .left
             } else {
-                // NSScreen Y grows upward. CGEvent Y also grows
-                // upward in the macOS coordinate space stroke uses
-                // (we sample via NSEvent.mouseLocation in the
-                // adapter). So dy > 0 means cursor moved up.
+                // Y grows UP in the sample stream: the adapter
+                // samples CGEvent.location (Y-down) and sign-flips Y
+                // at creation (EventTap.flipY), so a larger y means
+                // the cursor moved up. dy >= 0 ⇒ .up.
                 dir = dy >= 0 ? .up : .down
             }
             if out.last != dir { out.append(dir) }
