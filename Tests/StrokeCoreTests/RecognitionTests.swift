@@ -125,6 +125,44 @@ final class RecognitionTests: XCTestCase {
         } else { XCTFail("expected .ax") }
     }
 
+    func testOverlayConfigParsed() {
+        let toml = """
+        [overlay]
+        enabled = false
+        color = "#ff0000"
+        color-no-match = "orange"
+        width = 8
+        """
+        let cfg = StrokeConfig.parse(toml)
+        XCTAssertFalse(cfg.overlayEnabled)
+        XCTAssertEqual(cfg.overlayColor, "#ff0000")
+        XCTAssertEqual(cfg.overlayColorNoMatch, "orange")
+        XCTAssertEqual(cfg.overlayWidth, 8)
+    }
+
+    func testOverlayDefaultsWhenAbsent() {
+        let cfg = StrokeConfig.parse("[trigger]\nbutton = \"right\"")
+        XCTAssertTrue(cfg.overlayEnabled)          // default on
+        XCTAssertEqual(cfg.overlayColor, "#3b82f6")
+        XCTAssertEqual(cfg.overlayColorNoMatch, "#ef4444")
+        XCTAssertEqual(cfg.overlayWidth, 3)
+    }
+
+    func testOverlayWidthClamped() {
+        let cfg = StrokeConfig.parse("[overlay]\nwidth = 999")
+        XCTAssertEqual(cfg.overlayWidth, 40)       // clamped 1..40
+    }
+
+    func testMaxStrokeMs() {
+        XCTAssertEqual(StrokeConfig.parse("").maxStrokeMs, 0)               // default off
+        XCTAssertEqual(StrokeConfig.parse(
+            "[recognition]\nmax-stroke-ms = 1500").maxStrokeMs, 1500)
+        XCTAssertEqual(StrokeConfig.parse(
+            "[recognition]\nmax-stroke-ms = 50").maxStrokeMs, 100)          // clamp low
+        XCTAssertEqual(StrokeConfig.parse(
+            "[recognition]\nmax-stroke-ms = 999999").maxStrokeMs, 60000)    // clamp high
+    }
+
     func testRuleNameDefaultsToPattern() {
         let toml = """
         [[rules]]

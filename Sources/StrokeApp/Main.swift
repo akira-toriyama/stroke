@@ -126,8 +126,56 @@ enum StrokeApp {
 
         let source = MacOSMouseSource(
             trigger: cfg.trigger,
-            minStrokePx: cfg.minStrokePx
+            minStrokePx: cfg.minStrokePx,
+            maxStrokeMs: cfg.maxStrokeMs
         )
+
+        // Gesture-trail overlay (passive observer of the sample
+        // stream). Held for the process lifetime via `app.run()`.
+        if cfg.overlayEnabled {
+            let overlay = GestureOverlay(match: cfg.overlayColor,
+                                         noMatch: cfg.overlayColorNoMatch,
+                                         width: cfg.overlayWidth)
+            overlay.show()
+            let rules = cfg.rules
+            let excludes = cfg.excludeApps
+            // The tap callback fires these on the main thread, but
+            // they're not statically @MainActor — assumeIsolated is
+            // the documented bridge (same as the DNC observer).
+            //
+            // Color logic mirrors the Controller's dispatch decision:
+            // the trail is "valid" (match color) when the shape so far
+            // is empty (just started) or exactly matches a rule for the
+            // cursor-anchored target; "no match" once it forms a shape
+            // no rule wants, the app is excluded, or the stroke has
+            // already run past maxStrokeMs (so the user sees it won't
+            // fire).
+            source.onSample = { point, pattern, bundleID, expired in
+                var valid = false
+                var label: String? = nil
+                if !expired,
+                   !Matcher.isExcluded(bundleID: bundleID, by: excludes) {
+                    if pattern.isEmpty {
+                        valid = true                 // just started — neutral
+                    } else if let rule = Matcher.match(pattern: pattern,
+                                                       bundleID: bundleID,
+                                                       rules: rules) {
+                        valid = true
+                        label = rule.name            // show what it'll do
+                    }
+                }
+                MainActor.assumeIsolated {
+                    overlay.addPoint(point, valid: valid, label: label)
+                }
+            }
+            source.onStrokeEnd = {
+                MainActor.assumeIsolated { overlay.clear() }
+            }
+            Log.line("overlay: enabled (match=\(cfg.overlayColor), "
+                     + "noMatch=\(cfg.overlayColorNoMatch), "
+                     + "width=\(cfg.overlayWidth))")
+        }
+
         let controller = Controller(source: source, config: cfg)
         controller.start()
 

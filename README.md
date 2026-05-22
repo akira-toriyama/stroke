@@ -36,6 +36,16 @@ Out of the box (the bundled [`config.toml`](config.toml)):
 | `DRU` down → right → up | close the window | any app |
 | `L` left | minimize the window | any app |
 
+As you draw, a translucent trail follows the cursor so you can see
+the shape forming; it clears the moment you release. The trail is
+**colored by whether the shape so far matches a rule** — one color
+while it's a valid gesture for the window under the cursor, another
+once it forms a shape no rule wants (set up `DR` but drew `DL`?
+you'll see it turn). When it matches, the rule's `name` is shown
+next to the cursor so you know what it'll do before you release.
+Colors, width, and on/off live in the `[overlay]` section of
+`config.toml`.
+
 Actions target the window **under the cursor**, not whichever window
 holds keyboard focus: `ax` actions operate on it directly, `key`
 actions raise it first and send the keystroke, and `shell` actions
@@ -86,6 +96,11 @@ axis directions are not recognised yet. App filters support
 `*` / `?` globs and `!` exclusions. Action types are `key` (a
 keystroke), `ax` (`close` / `minimize` / `zoom` / `raise`), and
 `shell` (any command).
+
+`[recognition] max-stroke-ms` caps how long a gesture may take —
+draw slower than that and it's abandoned (so an ordinary deliberate
+right-drag isn't read as a gesture). `0` (default) = no limit; the
+trail turns the no-match color once you've run past the budget.
 
 ## CLI
 

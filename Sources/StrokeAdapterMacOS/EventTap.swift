@@ -35,6 +35,9 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
     // Configuration -----------------------------------------------------
     private let trigger: Trigger
     private let minStrokePx: Int
+    /// Max button-down→up duration (ms) for a stroke to count as a
+    /// gesture; `0` = no limit. A slower drag is abandoned at button-up.
+    private let maxStrokeMs: Int
     /// `--record` mode: never fire actions, deliver *every* stroke
     /// (including too-short ones) to the handler so the recorder can
     /// log them, and still replay short clicks so the user keeps a
@@ -45,6 +48,30 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var handler: (@Sendable (StrokeEvent) -> Void)?
+
+    /// Live trail hooks for the gesture overlay (set at startup, both
+    /// optional). `onSample` fires for the button-down point and each
+    /// drag point in **CG global coords** (Y-down — what the overlay
+    /// converts from). `onStrokeEnd` fires once when the button comes
+    /// up, so the overlay can clear. Both run on the main thread (the
+    /// tap callback). Recognition / dispatch are unaffected — the
+    /// overlay is a passive observer of the same stream.
+    ///
+    /// `onSample(point, pattern, bundleID, expired)` carries the trail
+    /// point (CG global coords), the gesture-so-far recognised from all
+    /// samples to date, the cursor-anchored target's bundle id, and
+    /// whether the stroke has already blown the `maxStrokeMs` budget —
+    /// enough for the App layer to decide whether the in-progress
+    /// stroke currently matches a rule (and colour the trail), without
+    /// EventTap needing to know about rules. `onStrokeEnd` fires once
+    /// on button-up so the overlay clears.
+    ///
+    /// Not `@Sendable` (unlike `handler`, which the protocol requires)
+    /// so the closures can capture the non-Sendable `GestureOverlay`.
+    /// Safe because everything here runs on the main thread; the
+    /// enclosing class is already `@unchecked Sendable` on that basis.
+    public var onSample: ((CGPoint, String, String, Bool) -> Void)?
+    public var onStrokeEnd: (() -> Void)?
 
     // Per-stroke capture state -----------------------------------------
     private var capturing = false
@@ -62,10 +89,17 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
     private static let replaySentinel: Int64 = 0x5354_524B_E115
 
     public init(trigger: Trigger, minStrokePx: Int,
-                isRecording: Bool = false) {
+                maxStrokeMs: Int = 0, isRecording: Bool = false) {
         self.trigger = trigger
         self.minStrokePx = minStrokePx
+        self.maxStrokeMs = maxStrokeMs
         self.isRecording = isRecording
+    }
+
+    /// Has the in-progress stroke exceeded `maxStrokeMs`?
+    private var strokeExpired: Bool {
+        maxStrokeMs > 0
+            && (CACurrentMediaTime() - strokeStart) * 1000 > Double(maxStrokeMs)
     }
 
     // MARK: - MouseSource
@@ -200,6 +234,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
         strokeStart = CACurrentMediaTime()
         samples.removeAll(keepingCapacity: true)
         samples.append(Sample(p: Self.flipY(cg), t: 0))
+        emitTrailSample(cg)
 
         Log.debug("event-tap: down at \(cg) → "
                   + "target=\(currentTarget?.bundleID ?? "nil")")
@@ -211,7 +246,17 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
         let cg = event.location
         let t = CACurrentMediaTime() - strokeStart
         samples.append(Sample(p: Self.flipY(cg), t: t))
+        emitTrailSample(cg)
         return nil
+    }
+
+    /// Feed the overlay one trail point plus the gesture-so-far. Skips
+    /// the recognise pass entirely when no overlay is attached.
+    private func emitTrailSample(_ cg: CGPoint) {
+        guard let onSample else { return }
+        let pattern = Recognition.recognize(samples: samples,
+                                             minStrokePx: minStrokePx).patternString
+        onSample(cg, pattern, currentTarget?.bundleID ?? "", strokeExpired)
     }
 
     /// Convert CG global coords (Y grows down) to the Y-up convention
@@ -224,7 +269,9 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
 
     private func handleUp(event: CGEvent) -> Unmanaged<CGEvent>? {
         guard capturing else { return Unmanaged.passUnretained(event) }
+        let expired = strokeExpired         // capture before resetting state
         capturing = false
+        onStrokeEnd?()   // clear the overlay trail, whatever the outcome
 
         let target = currentTarget
         let captured = samples
@@ -246,6 +293,19 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
                       + "— replayed click")
             // Recorder wants to see misses too — that's how the user
             // learns "I moved 12px but the threshold is 16."
+            if isRecording, let target, let h = handler {
+                h(StrokeEvent(target: target, samples: captured))
+            }
+            return nil
+        }
+
+        // Recognisable shape but the user took longer than
+        // `maxStrokeMs` — abandon it. No replay (they moved, so it
+        // wasn't a click) and no dispatch; the whole sequence is
+        // already swallowed, so nothing happens.
+        if expired {
+            Log.line("event-tap: \(recognised.patternString) recognised but "
+                     + "stroke exceeded \(maxStrokeMs)ms — abandoned")
             if isRecording, let target, let h = handler {
                 h(StrokeEvent(target: target, samples: captured))
             }

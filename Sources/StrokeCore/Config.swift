@@ -12,16 +12,36 @@ import Foundation
 public struct StrokeConfig: Sendable {
     public var trigger: Trigger
     public var minStrokePx: Int
+    /// Maximum time (ms) from button-down to button-up for a stroke to
+    /// still count as a gesture. A slower drag is abandoned (no
+    /// action). `0` = no limit. Lets you right-drag normally without
+    /// it being read as a gesture, as long as you take your time.
+    public var maxStrokeMs: Int
     public var sampleHz: Int
     public var excludeApps: [String]
     public var rules: [Rule]
+    /// Gesture-trail overlay. Colors stay strings here so Core needn't
+    /// depend on AppKit's NSColor — the adapter parses them (`#rgb` /
+    /// `#rrggbb` / `#rrggbbaa` / a few names). `overlayColor` is drawn
+    /// while the in-progress stroke matches a rule (and before it's
+    /// recognisable); `overlayColorNoMatch` while the shape so far
+    /// matches nothing.
+    public var overlayEnabled: Bool
+    public var overlayColor: String
+    public var overlayColorNoMatch: String
+    public var overlayWidth: Int
 
     public static let `default` = StrokeConfig(
         trigger: Trigger(button: .right, modifiers: []),
         minStrokePx: 16,
+        maxStrokeMs: 0,
         sampleHz: 120,
         excludeApps: [],
-        rules: []
+        rules: [],
+        overlayEnabled: true,
+        overlayColor: "#3b82f6",
+        overlayColorNoMatch: "#ef4444",
+        overlayWidth: 3
     )
 
     /// Read ~/.config/stroke/config.toml. Missing file → defaults,
@@ -51,8 +71,17 @@ public struct StrokeConfig: Sendable {
         // breaking recognition (the rule still loads, just bounded).
         let reco = doc.tables["recognition"] ?? [:]
         let minPx = max(4, min(200, reco.int("min-stroke-px", 16)))
+        // 0 = no limit; otherwise clamp to a sane 100ms..60s window.
+        let maxMs = { let m = reco.int("max-stroke-ms", 0); return m <= 0 ? 0 : max(100, min(60000, m)) }()
         let hz = max(30, min(240, reco.int("sample-hz", 120)))
         let excludes = reco.strings("exclude-apps")
+
+        // [overlay]
+        let ov = doc.tables["overlay"] ?? [:]
+        let overlayEnabled = ov.bool("enabled", true)
+        let overlayColor = { let c = ov.string("color"); return c.isEmpty ? "#3b82f6" : c }()
+        let overlayColorNoMatch = { let c = ov.string("color-no-match"); return c.isEmpty ? "#ef4444" : c }()
+        let overlayWidth = max(1, min(40, ov.int("width", 3)))
 
         // [[rules]]
         let rules: [Rule] = (doc.arrays["rules"] ?? []).compactMap { row in
@@ -70,9 +99,14 @@ public struct StrokeConfig: Sendable {
         return StrokeConfig(
             trigger: Trigger(button: button, modifiers: mods),
             minStrokePx: minPx,
+            maxStrokeMs: maxMs,
             sampleHz: hz,
             excludeApps: excludes,
-            rules: rules
+            rules: rules,
+            overlayEnabled: overlayEnabled,
+            overlayColor: overlayColor,
+            overlayColorNoMatch: overlayColorNoMatch,
+            overlayWidth: overlayWidth
         )
     }
 
@@ -116,6 +150,10 @@ private extension [String: TOMLValue] {
     }
     func int(_ key: String, _ fallback: Int) -> Int {
         if case .int(let i) = self[key] { return i }
+        return fallback
+    }
+    func bool(_ key: String, _ fallback: Bool) -> Bool {
+        if case .bool(let b) = self[key] { return b }
         return fallback
     }
     func strings(_ key: String, _ fallback: [String] = []) -> [String] {

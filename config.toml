@@ -41,6 +41,12 @@ modifiers = []
 # tolerant of jitter. Clamped 4..200.
 min-stroke-px = 16
 
+# Maximum time (ms) from button-down to button-up for a stroke to
+# count as a gesture. Draw slower than this and it's abandoned (no
+# action fires) — handy so an ordinary, deliberate right-drag isn't
+# read as a gesture. 0 = no limit. Clamped 100..60000 when set.
+max-stroke-ms = 0
+
 # Sampling cadence. Clamped 30..240.
 sample-hz = 120
 
@@ -48,6 +54,31 @@ sample-hz = 120
 # that already have native gestures (Xcode, video editors, …).
 # Supports `*` / `?` glob.
 exclude-apps = []
+
+
+# -----------------------------------------------------------------
+# Overlay — the translucent trail drawn while you draw a gesture
+# -----------------------------------------------------------------
+[overlay]
+
+# Show the trail while a stroke is in progress. The overlay is
+# click-through and clears the instant you release the button.
+enabled = true
+
+# The trail is colored by whether the shape you've drawn so far
+# matches a rule for the window under the cursor:
+#   color           — while it matches a rule (and before you've
+#                     moved enough to recognise any direction)
+#   color-no-match  — once the shape matches no rule (e.g. you set
+#                     up "RD" but drew "RL")
+# Either a name (blue red green orange purple pink yellow white black,
+# or "accent" for the system accent color) or a hex string ("#rgb",
+# "#rrggbb", "#rrggbbaa").
+color = "#3b82f6"
+color-no-match = "#ef4444"
+
+# Stroke width in points. Clamped 1..40.
+width = 3
 
 
 # -----------------------------------------------------------------
@@ -83,6 +114,10 @@ exclude-apps = []
 #   action-type = "ax"     + action-verb = "close" | "minimize" |
 #                                            "zoom" | "raise"
 #   action-type = "shell"  + action-cmd  = "open -a Terminal …"
+#
+# `name` is also shown in the overlay while you're drawing a shape
+# that matches this rule, so you can see what it'll do before
+# releasing — make it human-readable.
 #
 # Shell actions receive these env vars describing the target:
 #   STROKE_TARGET_BUNDLE_ID, STROKE_TARGET_PID,
