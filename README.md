@@ -36,6 +36,10 @@ Out of the box (the bundled [`config.toml`](config.toml)):
 | `DRU` down → right → up | close the window | any app |
 | `L` left | minimize the window | any app |
 
+As you draw, a translucent trail follows the cursor so you can see
+the shape forming; it clears the moment you release. Color, width,
+and on/off live in the `[overlay]` section of `config.toml`.
+
 Actions target the window **under the cursor**, not whichever window
 holds keyboard focus: `ax` actions operate on it directly, `key`
 actions raise it first and send the keystroke, and `shell` actions

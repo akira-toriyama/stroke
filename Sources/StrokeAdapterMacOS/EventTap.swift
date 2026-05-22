@@ -46,6 +46,21 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
     private var runLoopSource: CFRunLoopSource?
     private var handler: (@Sendable (StrokeEvent) -> Void)?
 
+    /// Live trail hooks for the gesture overlay (set at startup, both
+    /// optional). `onSample` fires for the button-down point and each
+    /// drag point in **CG global coords** (Y-down — what the overlay
+    /// converts from). `onStrokeEnd` fires once when the button comes
+    /// up, so the overlay can clear. Both run on the main thread (the
+    /// tap callback). Recognition / dispatch are unaffected — the
+    /// overlay is a passive observer of the same stream.
+    ///
+    /// Not `@Sendable` (unlike `handler`, which the protocol requires)
+    /// so the closures can capture the non-Sendable `GestureOverlay`.
+    /// Safe because everything here runs on the main thread; the
+    /// enclosing class is already `@unchecked Sendable` on that basis.
+    public var onSample: ((CGPoint) -> Void)?
+    public var onStrokeEnd: (() -> Void)?
+
     // Per-stroke capture state -----------------------------------------
     private var capturing = false
     private var samples: [Sample] = []
@@ -200,6 +215,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
         strokeStart = CACurrentMediaTime()
         samples.removeAll(keepingCapacity: true)
         samples.append(Sample(p: Self.flipY(cg), t: 0))
+        onSample?(cg)
 
         Log.debug("event-tap: down at \(cg) → "
                   + "target=\(currentTarget?.bundleID ?? "nil")")
@@ -211,6 +227,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
         let cg = event.location
         let t = CACurrentMediaTime() - strokeStart
         samples.append(Sample(p: Self.flipY(cg), t: t))
+        onSample?(cg)
         return nil
     }
 
@@ -225,6 +242,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
     private func handleUp(event: CGEvent) -> Unmanaged<CGEvent>? {
         guard capturing else { return Unmanaged.passUnretained(event) }
         capturing = false
+        onStrokeEnd?()   // clear the overlay trail, whatever the outcome
 
         let target = currentTarget
         let captured = samples

@@ -15,13 +15,22 @@ public struct StrokeConfig: Sendable {
     public var sampleHz: Int
     public var excludeApps: [String]
     public var rules: [Rule]
+    /// Gesture-trail overlay. `overlayColor` stays a string here so
+    /// Core needn't depend on AppKit's NSColor — the adapter parses it
+    /// (`#rgb` / `#rrggbb` / `#rrggbbaa` / a few names).
+    public var overlayEnabled: Bool
+    public var overlayColor: String
+    public var overlayWidth: Int
 
     public static let `default` = StrokeConfig(
         trigger: Trigger(button: .right, modifiers: []),
         minStrokePx: 16,
         sampleHz: 120,
         excludeApps: [],
-        rules: []
+        rules: [],
+        overlayEnabled: true,
+        overlayColor: "#3b82f6",
+        overlayWidth: 3
     )
 
     /// Read ~/.config/stroke/config.toml. Missing file → defaults,
@@ -54,6 +63,12 @@ public struct StrokeConfig: Sendable {
         let hz = max(30, min(240, reco.int("sample-hz", 120)))
         let excludes = reco.strings("exclude-apps")
 
+        // [overlay]
+        let ov = doc.tables["overlay"] ?? [:]
+        let overlayEnabled = ov.bool("enabled", true)
+        let overlayColor = { let c = ov.string("color"); return c.isEmpty ? "#3b82f6" : c }()
+        let overlayWidth = max(1, min(40, ov.int("width", 3)))
+
         // [[rules]]
         let rules: [Rule] = (doc.arrays["rules"] ?? []).compactMap { row in
             let pattern = row.string("pattern")
@@ -72,7 +87,10 @@ public struct StrokeConfig: Sendable {
             minStrokePx: minPx,
             sampleHz: hz,
             excludeApps: excludes,
-            rules: rules
+            rules: rules,
+            overlayEnabled: overlayEnabled,
+            overlayColor: overlayColor,
+            overlayWidth: overlayWidth
         )
     }
 
@@ -116,6 +134,10 @@ private extension [String: TOMLValue] {
     }
     func int(_ key: String, _ fallback: Int) -> Int {
         if case .int(let i) = self[key] { return i }
+        return fallback
+    }
+    func bool(_ key: String, _ fallback: Bool) -> Bool {
+        if case .bool(let b) = self[key] { return b }
         return fallback
     }
     func strings(_ key: String, _ fallback: [String] = []) -> [String] {

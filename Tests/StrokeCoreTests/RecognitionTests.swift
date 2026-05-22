@@ -125,6 +125,31 @@ final class RecognitionTests: XCTestCase {
         } else { XCTFail("expected .ax") }
     }
 
+    func testOverlayConfigParsed() {
+        let toml = """
+        [overlay]
+        enabled = false
+        color = "#ff0000"
+        width = 8
+        """
+        let cfg = StrokeConfig.parse(toml)
+        XCTAssertFalse(cfg.overlayEnabled)
+        XCTAssertEqual(cfg.overlayColor, "#ff0000")
+        XCTAssertEqual(cfg.overlayWidth, 8)
+    }
+
+    func testOverlayDefaultsWhenAbsent() {
+        let cfg = StrokeConfig.parse("[trigger]\nbutton = \"right\"")
+        XCTAssertTrue(cfg.overlayEnabled)          // default on
+        XCTAssertEqual(cfg.overlayColor, "#3b82f6")
+        XCTAssertEqual(cfg.overlayWidth, 3)
+    }
+
+    func testOverlayWidthClamped() {
+        let cfg = StrokeConfig.parse("[overlay]\nwidth = 999")
+        XCTAssertEqual(cfg.overlayWidth, 40)       // clamped 1..40
+    }
+
     func testRuleNameDefaultsToPattern() {
         let toml = """
         [[rules]]

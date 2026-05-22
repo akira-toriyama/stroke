@@ -128,6 +128,26 @@ enum StrokeApp {
             trigger: cfg.trigger,
             minStrokePx: cfg.minStrokePx
         )
+
+        // Gesture-trail overlay (passive observer of the sample
+        // stream). Held for the process lifetime via `app.run()`.
+        if cfg.overlayEnabled {
+            let overlay = GestureOverlay(color: cfg.overlayColor,
+                                         width: cfg.overlayWidth)
+            overlay.show()
+            // The tap callback fires these on the main thread, but
+            // they're not statically @MainActor — assumeIsolated is
+            // the documented bridge (same as the DNC observer).
+            source.onSample = { p in
+                MainActor.assumeIsolated { overlay.addPoint(p) }
+            }
+            source.onStrokeEnd = {
+                MainActor.assumeIsolated { overlay.clear() }
+            }
+            Log.line("overlay: enabled (color=\(cfg.overlayColor), "
+                     + "width=\(cfg.overlayWidth))")
+        }
+
         let controller = Controller(source: source, config: cfg)
         controller.start()
 

@@ -51,6 +51,17 @@ ws-tabs.
   `MouseSource`. Real vs synthetic is picked at app startup.
   Adding a new mouse-input strategy means a new `MouseSource`
   conformer in an Adapter module — never a `#if` in Core.
+- **The gesture-trail overlay lives in `StrokeAdapterMacOS`**, not a
+  separate View module ([Sources/StrokeAdapterMacOS/GestureOverlay.swift](Sources/StrokeAdapterMacOS/GestureOverlay.swift)).
+  It's the project's only on-screen UI; it's pure AppKit/CG rendering
+  fed by the event-tap sample stream, so it belongs in the macOS
+  adapter rather than justifying a facet-style View layer. Core stays
+  UI-free — trail points cross the seam as plain `CGPoint`. **Don't
+  promote it to its own module** unless a second UI surface appears.
+  `MacOSMouseSource.onSample` / `onStrokeEnd` are the (non-`@Sendable`,
+  main-thread-only) hooks that feed it; they're deliberately separate
+  from the protocol's `@Sendable` stroke `handler` so they can capture
+  the non-Sendable overlay.
 
 ### The cursor-anchored spine — DO NOT regress this
 
