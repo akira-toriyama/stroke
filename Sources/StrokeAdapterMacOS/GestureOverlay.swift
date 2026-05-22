@@ -215,66 +215,98 @@ private final class TrailView: NSView {
         }
     }
 
-    /// Draw the hint as a rounded card just above-right of the cursor:
-    /// the shape on top (bold), then each reachable rule's remaining
-    /// arrows + name. The firing row is tinted with the accent color.
+    private static func mono(_ sz: CGFloat, _ w: NSFont.Weight) -> NSFont {
+        .monospacedSystemFont(ofSize: sz, weight: w)
+    }
+    private static let textOpts: NSString.DrawingOptions = [.usesLineFragmentOrigin]
+
+    /// Spatial tooltips: each reachable rule is shown in the direction
+    /// of its next arrow — left for `←…`, right for `→…`, up for `↑…`,
+    /// down for `↓…` — so the layout itself points the way. Rules that
+    /// share a next direction stack into one card; the rule the current
+    /// shape fires now (empty remainder) sits at the cursor.
     private func drawHint(_ hint: GestureHint, near cursor: CGPoint,
                           accent: NSColor) {
-        func mono(_ sz: CGFloat, _ w: NSFont.Weight) -> NSFont {
-            .monospacedSystemFont(ofSize: sz, weight: w)
-        }
-        let dim = NSColor.white.withAlphaComponent(0.55)
-        let markerFont = mono(13, .bold), suffixFont = mono(13, .medium)
-
-        // Names align in a column: a left tab stop just past the widest
-        // "marker+suffix" prefix. Arrow glyphs aren't monospaced, so a
-        // tab stop (not space padding) is what reliably lines them up.
-        var prefixMax: CGFloat = 0
+        var byDir: [Character: [GestureHint.Row]] = [:]
+        var fires: [GestureHint.Row] = []
         for row in hint.rows {
-            let marker = (row.fires ? "▸ " : "   ") as NSString
-            let w = marker.size(withAttributes: [.font: markerFont]).width
-                + (row.suffix as NSString).size(withAttributes: [.font: suffixFont]).width
-            prefixMax = max(prefixMax, w)
+            if let first = row.suffix.first { byDir[first, default: []].append(row) }
+            else { fires.append(row) }
+        }
+        let gap: CGFloat = 24
+        for (arrow, rows) in byDir {
+            let s = cardText(rows, accent: accent)
+            let size = cardSize(s)
+            var o: CGPoint
+            switch arrow {
+            case "←": o = CGPoint(x: cursor.x - gap - size.width, y: cursor.y - size.height / 2)
+            case "→": o = CGPoint(x: cursor.x + gap,               y: cursor.y - size.height / 2)
+            case "↑": o = CGPoint(x: cursor.x - size.width / 2,     y: cursor.y + gap)
+            case "↓": o = CGPoint(x: cursor.x - size.width / 2,     y: cursor.y - gap - size.height)
+            default:  o = CGPoint(x: cursor.x + gap, y: cursor.y + gap)
+            }
+            drawCard(s, at: o, size: size)
+        }
+        if !fires.isEmpty {
+            let s = cardText(fires, accent: accent)
+            let size = cardSize(s)
+            drawCard(s, at: CGPoint(x: cursor.x + gap, y: cursor.y + gap), size: size)
+        }
+    }
+
+    /// One card's text: each row is `[▸ ]<remaining arrows>\t<name>`,
+    /// names tab-aligned past the widest arrows; the firing row tinted.
+    private func cardText(_ rows: [GestureHint.Row], accent: NSColor) -> NSAttributedString {
+        let arrowFont = Self.mono(14, .semibold)
+        var arrowMax: CGFloat = 0
+        for r in rows {
+            let pre = ((r.fires ? "▸ " : "") + r.suffix) as NSString
+            arrowMax = max(arrowMax, pre.size(withAttributes: [.font: arrowFont]).width)
         }
         let para = NSMutableParagraphStyle()
         para.lineSpacing = 4
-        para.tabStops = [NSTextTab(textAlignment: .left, location: prefixMax + 14)]
+        para.tabStops = [NSTextTab(textAlignment: .left, location: arrowMax + 12)]
 
         let s = NSMutableAttributedString()
-        s.append(NSAttributedString(string: hint.shape, attributes: [
-            .font: mono(17, .semibold), .foregroundColor: NSColor.white]))
-        for row in hint.rows {
-            s.append(NSAttributedString(string: "\n", attributes: [.font: mono(13, .regular)]))
-            s.append(NSAttributedString(string: row.fires ? "▸ " : "   ", attributes: [
-                .font: markerFont,
-                .foregroundColor: row.fires ? accent : dim]))
-            if !row.suffix.isEmpty {
-                s.append(NSAttributedString(string: row.suffix, attributes: [
-                    .font: suffixFont,
-                    .foregroundColor: NSColor.white.withAlphaComponent(0.9)]))
+        for (i, r) in rows.enumerated() {
+            if i > 0 { s.append(NSAttributedString(string: "\n")) }
+            if r.fires {
+                s.append(NSAttributedString(string: "▸ ", attributes: [
+                    .font: arrowFont, .foregroundColor: accent]))
             }
-            s.append(NSAttributedString(string: "\t" + row.name, attributes: [
-                .font: mono(13, .regular),
-                .foregroundColor: row.fires ? accent : NSColor.white.withAlphaComponent(0.8)]))
+            if !r.suffix.isEmpty {
+                s.append(NSAttributedString(string: r.suffix, attributes: [
+                    .font: arrowFont, .foregroundColor: NSColor.white]))
+            }
+            s.append(NSAttributedString(string: "\t" + r.name, attributes: [
+                .font: Self.mono(13, .regular),
+                .foregroundColor: r.fires ? accent : NSColor.white.withAlphaComponent(0.85)]))
         }
         s.addAttribute(.paragraphStyle, value: para,
                        range: NSRange(location: 0, length: s.length))
+        return s
+    }
 
-        let opts: NSString.DrawingOptions = [.usesLineFragmentOrigin]
-        let textSize = s.boundingRect(
-            with: CGSize(width: 600, height: 800), options: opts).size
-        let padX: CGFloat = 13, padY: CGFloat = 10, gap: CGFloat = 18
-        var card = CGRect(x: cursor.x + gap, y: cursor.y + gap,
-                          width: ceil(textSize.width) + padX * 2,
-                          height: ceil(textSize.height) + padY * 2)
-        card.origin.x = min(max(card.origin.x, 6), bounds.maxX - card.width - 6)
-        card.origin.y = min(max(card.origin.y, 6), bounds.maxY - card.height - 6)
+    private let cardPadX: CGFloat = 12, cardPadY: CGFloat = 9
 
-        let bg = NSBezierPath(roundedRect: card, xRadius: 11, yRadius: 11)
+    private func cardSize(_ s: NSAttributedString) -> CGSize {
+        let t = s.boundingRect(with: CGSize(width: 600, height: 800),
+                               options: Self.textOpts).size
+        return CGSize(width: ceil(t.width) + cardPadX * 2,
+                      height: ceil(t.height) + cardPadY * 2)
+    }
+
+    /// Draw a rounded card (shadow + hair border) at `origin`, clamped
+    /// to stay on-screen, then its text.
+    private func drawCard(_ s: NSAttributedString, at origin: CGPoint, size: CGSize) {
+        var rect = CGRect(origin: origin, size: size)
+        rect.origin.x = min(max(rect.origin.x, 6), bounds.maxX - size.width - 6)
+        rect.origin.y = min(max(rect.origin.y, 6), bounds.maxY - size.height - 6)
+        let bg = NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10)
         NSGraphicsContext.saveGraphicsState()
         let shadow = NSShadow()
         shadow.shadowColor = NSColor.black.withAlphaComponent(0.45)
-        shadow.shadowBlurRadius = 14
+        shadow.shadowBlurRadius = 13
         shadow.shadowOffset = NSSize(width: 0, height: -3)
         shadow.set()
         NSColor.black.withAlphaComponent(0.8).setFill()
@@ -283,7 +315,6 @@ private final class TrailView: NSView {
         NSColor.white.withAlphaComponent(0.12).setStroke()
         bg.lineWidth = 1
         bg.stroke()
-
-        s.draw(with: card.insetBy(dx: padX, dy: padY), options: opts)
+        s.draw(with: rect.insetBy(dx: cardPadX, dy: cardPadY), options: Self.textOpts)
     }
 }
