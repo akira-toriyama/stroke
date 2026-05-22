@@ -78,7 +78,23 @@ enum StrokeApp {
         if argv.contains("--help") { printHelp() }
         if argv.contains("--debug") { debugMode = true }
 
-        // Standalone modes —  no running daemon required.
+        // Two-pass: reject ANY unknown flag *before* dispatching a
+        // recognised one, so `stroke --reload --typo` fails loudly on
+        // --typo instead of silently acting on --reload and never
+        // looking at the rest (no silent fallback — the loud-reject
+        // policy must hold even when flags are combined).
+        let recognised: Set<String> = [
+            "--help", "--debug", "--validate", "--record",
+            "--reload", "--quit",
+        ]
+        for a in argv where !recognised.contains(a) {
+            let msg = "stroke: unknown flag \"\(a)\" — see "
+                + "`stroke --help`\n"
+            FileHandle.standardError.write(Data(msg.utf8))
+            exit(2)
+        }
+
+        // Standalone modes — no running daemon required.
         if argv.contains("--validate") {
             let cfg = StrokeConfig.load()
             FileHandle.standardError.write(Data((
@@ -93,19 +109,6 @@ enum StrokeApp {
         // Client commands — require a running daemon.
         if argv.contains("--reload") { runClient(cmd: "reload") }
         if argv.contains("--quit")   { runClient(cmd: "quit") }
-
-        // Reject unknown flags loudly (facet policy: silent fallback
-        // is a misfeature).
-        let recognised: Set<String> = [
-            "--help", "--debug", "--validate", "--record",
-            "--reload", "--quit",
-        ]
-        for a in argv where !recognised.contains(a) {
-            let msg = "stroke: unknown flag \"\(a)\" — see "
-                + "`stroke --help`\n"
-            FileHandle.standardError.write(Data(msg.utf8))
-            exit(2)
-        }
 
         // ----- Server mode -----
         runServer()
