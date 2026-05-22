@@ -15,11 +15,15 @@ public struct StrokeConfig: Sendable {
     public var sampleHz: Int
     public var excludeApps: [String]
     public var rules: [Rule]
-    /// Gesture-trail overlay. `overlayColor` stays a string here so
-    /// Core needn't depend on AppKit's NSColor — the adapter parses it
-    /// (`#rgb` / `#rrggbb` / `#rrggbbaa` / a few names).
+    /// Gesture-trail overlay. Colors stay strings here so Core needn't
+    /// depend on AppKit's NSColor — the adapter parses them (`#rgb` /
+    /// `#rrggbb` / `#rrggbbaa` / a few names). `overlayColor` is drawn
+    /// while the in-progress stroke matches a rule (and before it's
+    /// recognisable); `overlayColorNoMatch` while the shape so far
+    /// matches nothing.
     public var overlayEnabled: Bool
     public var overlayColor: String
+    public var overlayColorNoMatch: String
     public var overlayWidth: Int
 
     public static let `default` = StrokeConfig(
@@ -30,6 +34,7 @@ public struct StrokeConfig: Sendable {
         rules: [],
         overlayEnabled: true,
         overlayColor: "#3b82f6",
+        overlayColorNoMatch: "#ef4444",
         overlayWidth: 3
     )
 
@@ -67,6 +72,7 @@ public struct StrokeConfig: Sendable {
         let ov = doc.tables["overlay"] ?? [:]
         let overlayEnabled = ov.bool("enabled", true)
         let overlayColor = { let c = ov.string("color"); return c.isEmpty ? "#3b82f6" : c }()
+        let overlayColorNoMatch = { let c = ov.string("color-no-match"); return c.isEmpty ? "#ef4444" : c }()
         let overlayWidth = max(1, min(40, ov.int("width", 3)))
 
         // [[rules]]
@@ -90,6 +96,7 @@ public struct StrokeConfig: Sendable {
             rules: rules,
             overlayEnabled: overlayEnabled,
             overlayColor: overlayColor,
+            overlayColorNoMatch: overlayColorNoMatch,
             overlayWidth: overlayWidth
         )
     }

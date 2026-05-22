@@ -37,8 +37,12 @@ Out of the box (the bundled [`config.toml`](config.toml)):
 | `L` left | minimize the window | any app |
 
 As you draw, a translucent trail follows the cursor so you can see
-the shape forming; it clears the moment you release. Color, width,
-and on/off live in the `[overlay]` section of `config.toml`.
+the shape forming; it clears the moment you release. The trail is
+**colored by whether the shape so far matches a rule** — one color
+while it's a valid gesture for the window under the cursor, another
+once it forms a shape no rule wants (set up `DR` but drew `DL`?
+you'll see it turn). Colors, width, and on/off live in the
+`[overlay]` section of `config.toml`.
 
 Actions target the window **under the cursor**, not whichever window
 holds keyboard focus: `ax` actions operate on it directly, `key`

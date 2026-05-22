@@ -130,11 +130,13 @@ final class RecognitionTests: XCTestCase {
         [overlay]
         enabled = false
         color = "#ff0000"
+        color-no-match = "orange"
         width = 8
         """
         let cfg = StrokeConfig.parse(toml)
         XCTAssertFalse(cfg.overlayEnabled)
         XCTAssertEqual(cfg.overlayColor, "#ff0000")
+        XCTAssertEqual(cfg.overlayColorNoMatch, "orange")
         XCTAssertEqual(cfg.overlayWidth, 8)
     }
 
@@ -142,6 +144,7 @@ final class RecognitionTests: XCTestCase {
         let cfg = StrokeConfig.parse("[trigger]\nbutton = \"right\"")
         XCTAssertTrue(cfg.overlayEnabled)          // default on
         XCTAssertEqual(cfg.overlayColor, "#3b82f6")
+        XCTAssertEqual(cfg.overlayColorNoMatch, "#ef4444")
         XCTAssertEqual(cfg.overlayWidth, 3)
     }
 

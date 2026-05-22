@@ -54,11 +54,19 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
     /// tap callback). Recognition / dispatch are unaffected — the
     /// overlay is a passive observer of the same stream.
     ///
+    /// `onSample(point, pattern, bundleID)` carries the trail point
+    /// (CG global coords), the gesture-so-far recognised from all
+    /// samples to date, and the cursor-anchored target's bundle id —
+    /// enough for the App layer to decide whether the in-progress
+    /// stroke currently matches a rule (and colour the trail), without
+    /// EventTap needing to know about rules. `onStrokeEnd` fires once
+    /// on button-up so the overlay clears.
+    ///
     /// Not `@Sendable` (unlike `handler`, which the protocol requires)
     /// so the closures can capture the non-Sendable `GestureOverlay`.
     /// Safe because everything here runs on the main thread; the
     /// enclosing class is already `@unchecked Sendable` on that basis.
-    public var onSample: ((CGPoint) -> Void)?
+    public var onSample: ((CGPoint, String, String) -> Void)?
     public var onStrokeEnd: (() -> Void)?
 
     // Per-stroke capture state -----------------------------------------
@@ -215,7 +223,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
         strokeStart = CACurrentMediaTime()
         samples.removeAll(keepingCapacity: true)
         samples.append(Sample(p: Self.flipY(cg), t: 0))
-        onSample?(cg)
+        emitTrailSample(cg)
 
         Log.debug("event-tap: down at \(cg) → "
                   + "target=\(currentTarget?.bundleID ?? "nil")")
@@ -227,8 +235,17 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
         let cg = event.location
         let t = CACurrentMediaTime() - strokeStart
         samples.append(Sample(p: Self.flipY(cg), t: t))
-        onSample?(cg)
+        emitTrailSample(cg)
         return nil
+    }
+
+    /// Feed the overlay one trail point plus the gesture-so-far. Skips
+    /// the recognise pass entirely when no overlay is attached.
+    private func emitTrailSample(_ cg: CGPoint) {
+        guard let onSample else { return }
+        let pattern = Recognition.recognize(samples: samples,
+                                             minStrokePx: minStrokePx).patternString
+        onSample(cg, pattern, currentTarget?.bundleID ?? "")
     }
 
     /// Convert CG global coords (Y grows down) to the Y-up convention

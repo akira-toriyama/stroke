@@ -59,10 +59,17 @@ exclude-apps = []
 # click-through and clears the instant you release the button.
 enabled = true
 
-# Stroke color. Either a name (blue red green orange purple pink
-# yellow white black, or "accent" for the system accent color) or a
-# hex string: "#rgb", "#rrggbb", or "#rrggbbaa".
+# The trail is colored by whether the shape you've drawn so far
+# matches a rule for the window under the cursor:
+#   color           — while it matches a rule (and before you've
+#                     moved enough to recognise any direction)
+#   color-no-match  — once the shape matches no rule (e.g. you set
+#                     up "RD" but drew "RL")
+# Either a name (blue red green orange purple pink yellow white black,
+# or "accent" for the system accent color) or a hex string ("#rgb",
+# "#rrggbb", "#rrggbbaa").
 color = "#3b82f6"
+color-no-match = "#ef4444"
 
 # Stroke width in points. Clamped 1..40.
 width = 3

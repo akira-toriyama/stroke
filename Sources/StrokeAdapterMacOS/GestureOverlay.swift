@@ -22,13 +22,16 @@ public final class GestureOverlay {
     private let window: NSWindow
     private let view: TrailView
 
-    /// `color` is a config string: `#RGB` / `#RRGGBB` / `#RRGGBBAA`
-    /// or a small set of names (see `nsColor`). `width` is the stroke
-    /// width in points.
-    public init(color: String, width: Int) {
+    /// Colors are config strings: `#RGB` / `#RRGGBB` / `#RRGGBBAA`
+    /// or a small set of names (see `nsColor`). `match` is used while
+    /// the in-progress stroke matches a rule (and before it's moved
+    /// enough to recognise anything); `noMatch` while the shape so far
+    /// matches nothing. `width` is the stroke width in points.
+    public init(match: String, noMatch: String, width: Int) {
         let frame = Self.unionFrame()
         let v = TrailView(frame: CGRect(origin: .zero, size: frame.size))
-        v.strokeColor = Self.nsColor(color) ?? .systemBlue
+        v.matchColor = Self.nsColor(match) ?? .systemBlue
+        v.noMatchColor = Self.nsColor(noMatch) ?? .systemRed
         v.strokeWidth = CGFloat(max(1, min(40, width)))
         v.originOffset = frame.origin   // global Cocoa origin of the union
         self.view = v
@@ -53,10 +56,12 @@ public final class GestureOverlay {
         window.orderFrontRegardless()
     }
 
-    /// Append one trail point (CG global coords, Y-down). Coalesced
+    /// Append one trail point (CG global coords, Y-down). `valid`
+    /// recolors the whole trail: the match color when the stroke so
+    /// far matches a rule, the no-match color otherwise. Coalesced
     /// redraws keep this cheap even at the per-mouse-move rate.
-    public func addPoint(_ cg: CGPoint) {
-        view.append(cg)
+    public func addPoint(_ cg: CGPoint, valid: Bool) {
+        view.append(cg, valid: valid)
     }
 
     /// Clear the trail (stroke ended).
@@ -121,19 +126,22 @@ public final class GestureOverlay {
 // MARK: - Trail view
 
 private final class TrailView: NSView {
-    var strokeColor: NSColor = .systemBlue
+    var matchColor: NSColor = .systemBlue
+    var noMatchColor: NSColor = .systemRed
     var strokeWidth: CGFloat = 3
     /// Cocoa-global origin of the window; subtracted to get view-local
     /// coords from a global point.
     var originOffset: CGPoint = .zero
 
     private var points: [CGPoint] = []   // already in view-local coords
+    private var valid = true             // current match state of the trail
 
     override var isFlipped: Bool { false }   // Cocoa default (Y-up)
     override func hitTest(_ point: NSPoint) -> NSView? { nil }   // click-through
 
     /// Convert a CG global point (Y-down) to view-local (Y-up) coords.
-    func append(_ cg: CGPoint) {
+    func append(_ cg: CGPoint, valid: Bool) {
+        self.valid = valid
         // CG global (origin top-left, Y-down) → Cocoa global (origin
         // bottom-left of the primary display, Y-up). Flip about the
         // primary screen's height; the primary is the screen whose
@@ -161,7 +169,7 @@ private final class TrailView: NSView {
         path.lineJoinStyle = .round
         path.move(to: points[0])
         for p in points.dropFirst() { path.line(to: p) }
-        strokeColor.withAlphaComponent(0.85).setStroke()
+        (valid ? matchColor : noMatchColor).withAlphaComponent(0.85).setStroke()
         path.stroke()
     }
 }

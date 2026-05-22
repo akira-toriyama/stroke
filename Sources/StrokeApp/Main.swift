@@ -132,19 +132,34 @@ enum StrokeApp {
         // Gesture-trail overlay (passive observer of the sample
         // stream). Held for the process lifetime via `app.run()`.
         if cfg.overlayEnabled {
-            let overlay = GestureOverlay(color: cfg.overlayColor,
+            let overlay = GestureOverlay(match: cfg.overlayColor,
+                                         noMatch: cfg.overlayColorNoMatch,
                                          width: cfg.overlayWidth)
             overlay.show()
+            let rules = cfg.rules
+            let excludes = cfg.excludeApps
             // The tap callback fires these on the main thread, but
             // they're not statically @MainActor — assumeIsolated is
             // the documented bridge (same as the DNC observer).
-            source.onSample = { p in
-                MainActor.assumeIsolated { overlay.addPoint(p) }
+            //
+            // Color logic mirrors the Controller's dispatch decision:
+            // the trail is "valid" (match color) when the shape so far
+            // is empty (just started) or exactly matches a rule for the
+            // cursor-anchored target; "no match" once it forms a shape
+            // no rule wants, or the app is excluded.
+            source.onSample = { point, pattern, bundleID in
+                let valid = !Matcher.isExcluded(bundleID: bundleID, by: excludes)
+                    && (pattern.isEmpty
+                        || Matcher.match(pattern: pattern,
+                                         bundleID: bundleID,
+                                         rules: rules) != nil)
+                MainActor.assumeIsolated { overlay.addPoint(point, valid: valid) }
             }
             source.onStrokeEnd = {
                 MainActor.assumeIsolated { overlay.clear() }
             }
-            Log.line("overlay: enabled (color=\(cfg.overlayColor), "
+            Log.line("overlay: enabled (match=\(cfg.overlayColor), "
+                     + "noMatch=\(cfg.overlayColorNoMatch), "
                      + "width=\(cfg.overlayWidth))")
         }
 
