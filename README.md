@@ -54,7 +54,10 @@ draw, with the one that fires right now tinted in the match color:
 So after a `↓` you can see you're on the way to either, and what to
 add. The trail is the match color while the current shape fires a
 rule, the no-match color otherwise. Colors, width, and on/off live in
-the `[overlay]` section of `config.toml`.
+the `[overlay]` section of `config.toml`, alongside per-piece toggles
+for the target-app **badge** (`badge-enabled`, `badge-size`), the
+frosted-blur HUD background (`blur-enabled`), and the badge's scale-
+in animation (`anim-enabled`).
 
 Actions target the window **under the cursor**, not whichever window
 holds keyboard focus: `ax` actions operate on it directly, `key`

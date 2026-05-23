@@ -50,7 +50,10 @@ L = 左    U = 上    R = 右    D = 下
 
 `↓` まで描けば、どちらに行けて何を足せばいいか分かる。軌跡は今の形が
 ルールを発動する時は match 色、そうでなければ no-match 色。色・太さ・
-on/off は `config.toml` の `[overlay]` で設定。
+on/off は `config.toml` の `[overlay]` で設定。同セクションに対象アプリ
+**バッジ**(`badge-enabled`/`badge-size`)、フロストブラー HUD 背景
+(`blur-enabled`)、バッジ登場の scale-in(`anim-enabled`)も用意して
+いる。
 
 アクションは **カーソル直下のウィンドウ** を対象にする(キーボード
 フォーカスを持つウィンドウではない): `ax` はそのウィンドウを直接

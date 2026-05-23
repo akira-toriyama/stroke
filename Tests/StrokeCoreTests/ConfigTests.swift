@@ -112,6 +112,33 @@ final class ConfigTests: XCTestCase {
             "[overlay]\nwidth = 0").overlayWidth, 1)
     }
 
+    func testOverlayBadgeKnobs() {
+        // Defaults — every overlay knob is opt-out so a config that
+        // doesn't mention them keeps the rich HUD.
+        let def = StrokeConfig.parse("")
+        XCTAssertTrue(def.overlayBadgeEnabled)
+        XCTAssertTrue(def.overlayBlurEnabled)
+        XCTAssertTrue(def.overlayAnimEnabled)
+        XCTAssertEqual(def.overlayBadgeSize, 56)
+
+        // Explicit off + custom size — and the size clamps so a typo
+        // can't pin the badge to nothing.
+        let custom = StrokeConfig.parse("""
+        [overlay]
+        badge-enabled = false
+        blur-enabled = false
+        anim-enabled = false
+        badge-size = 999
+        """)
+        XCTAssertFalse(custom.overlayBadgeEnabled)
+        XCTAssertFalse(custom.overlayBlurEnabled)
+        XCTAssertFalse(custom.overlayAnimEnabled)
+        XCTAssertEqual(custom.overlayBadgeSize, 96)
+
+        XCTAssertEqual(StrokeConfig.parse(
+            "[overlay]\nbadge-size = 4").overlayBadgeSize, 32)
+    }
+
     // MARK: - [[rules]]
 
     func testConfigParsesArrayOfTables() {
