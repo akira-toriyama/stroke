@@ -323,7 +323,7 @@ decisions. Subsections ordered broad → narrow.
   release drafts, branch protection, fine-grained PAT scoping
   (the recurring foot-gun behind `HOMEBREW_TAP_TOKEN`).
 
-### Prior art
+### Inspiration
 
 - [MGLAHK (pyonkichi)](https://ss1.xrea.com/pyonkichi.g1.xrea.com/mglahk.html)
   *(reviewed 2026-05-23)* — Japanese-language mouse-gesture
