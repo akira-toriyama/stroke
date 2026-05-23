@@ -39,14 +39,24 @@ public final class GestureOverlay {
     /// or a small set of names (see `nsColor`). `match` is used while
     /// the in-progress stroke matches a rule (and before it's moved
     /// enough to recognise anything); `noMatch` while the shape so far
-    /// matches nothing. `width` is the stroke width in points.
-    public init(match: String, noMatch: String, width: Int) {
+    /// matches nothing. The boolean toggles + `badgeSize` come from
+    /// `[overlay]` — each independently lets the user dial back a
+    /// piece of the HUD without disabling the whole overlay.
+    public init(match: String, noMatch: String, width: Int,
+                badgeEnabled: Bool = true,
+                blurEnabled: Bool = true,
+                badgeSize: Int = 56,
+                animEnabled: Bool = true) {
         let frame = Self.unionFrame()
-        let v = TrailView(frame: CGRect(origin: .zero, size: frame.size))
+        let v = TrailView(frame: CGRect(origin: .zero, size: frame.size),
+                          blurEnabled: blurEnabled)
         v.matchColor = Self.nsColor(match) ?? .systemBlue
         v.noMatchColor = Self.nsColor(noMatch) ?? .systemRed
         v.strokeWidth = CGFloat(width)   // already clamped by StrokeConfig
         v.originOffset = frame.origin    // global Cocoa origin of the union
+        v.badgeEnabled = badgeEnabled
+        v.badgeSize = CGFloat(badgeSize)
+        v.animEnabled = animEnabled
         self.view = v
 
         let w = NSWindow(contentRect: frame, styleMask: .borderless,
@@ -151,6 +161,13 @@ private final class TrailView: NSView {
     /// Cocoa-global origin of the window; subtracted to get view-local
     /// coords from a global point.
     var originOffset: CGPoint = .zero
+    /// User-visible knobs from `[overlay]`. Set by `GestureOverlay.init`
+    /// from the matching `StrokeConfig` fields and treated as fixed
+    /// for the daemon's life (config reload re-creates the overlay).
+    fileprivate let blurEnabled: Bool
+    var badgeEnabled: Bool = true
+    var badgeSize: CGFloat = 56
+    var animEnabled: Bool = true
 
     fileprivate var points: [CGPoint] = []  // already in view-local coords
     fileprivate var valid = true            // current match state of the trail
@@ -207,16 +224,19 @@ private final class TrailView: NSView {
         return v
     }()
 
-    override init(frame frameRect: NSRect) {
+    init(frame frameRect: NSRect, blurEnabled: Bool = true) {
+        self.blurEnabled = blurEnabled
         super.init(frame: frameRect)
         wantsLayer = true
-        blurView.frame = bounds
         hudContent.frame = bounds
-        // Empty mask initially — no HUD until a sample arrives.
-        let mask = CAShapeLayer()
-        mask.fillColor = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
-        blurView.layer?.mask = mask
-        addSubview(blurView)
+        if blurEnabled {
+            blurView.frame = bounds
+            // Empty mask initially — no HUD until a sample arrives.
+            let mask = CAShapeLayer()
+            mask.fillColor = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
+            blurView.layer?.mask = mask
+            addSubview(blurView)
+        }
         addSubview(hudContent)
         hudContent.owner = self
     }
@@ -290,7 +310,6 @@ private final class TrailView: NSView {
 
     // MARK: - HUD layout
 
-    private let originBadgeSize: CGFloat = 56
     private let badgeAnimDuration: TimeInterval = 0.15
 
     /// Compute every HUD region's rect (cards + optional badge),
@@ -332,16 +351,33 @@ private final class TrailView: NSView {
             if !fires.isEmpty {
                 let s = cardText(fires)
                 let size = cardSize(s)
+                // Fires card fill: accent on its own over blur (alpha
+                // 0.5 lets the frost show through). Without blur the
+                // dark backdrop is missing too, so the tint goes more
+                // opaque to keep the card a distinct surface.
+                let firesAlpha: CGFloat = blurEnabled ? 0.5 : 0.78
                 cardLayouts.append(CardLayout(
                     rect: clampedCardRect(
                         at: CGPoint(x: cursor.x + gap, y: cursor.y + gap),
                         size: size),
-                    text: s, fill: accent.withAlphaComponent(0.5)))
+                    text: s, fill: accent.withAlphaComponent(firesAlpha)))
+            }
+            // With blur disabled, regular cards still need a fill —
+            // the frost would have been their backdrop. Re-run and
+            // tag each non-fires layout with the solid dark fill.
+            if !blurEnabled {
+                for i in cardLayouts.indices where cardLayouts[i].fill == nil {
+                    cardLayouts[i] = CardLayout(
+                        rect: cardLayouts[i].rect,
+                        text: cardLayouts[i].text,
+                        fill: NSColor.black.withAlphaComponent(0.8))
+                }
             }
         }
 
-        if hint != nil, let icon = originIcon, let origin = points.first {
-            let s = originBadgeSize
+        if badgeEnabled,
+           hint != nil, let icon = originIcon, let origin = points.first {
+            let s = badgeSize
             var rect = CGRect(x: origin.x - s / 2, y: origin.y - s / 2,
                               width: s, height: s)
             rect.origin.x = min(max(rect.origin.x, 8), bounds.maxX - s - 8)
@@ -351,7 +387,7 @@ private final class TrailView: NSView {
             // frame until done so the mask scales with the visible
             // badge — otherwise blur briefly extends past the border.
             var scale: CGFloat = 1.0
-            if let t0 = badgeAppearedAt {
+            if animEnabled, let t0 = badgeAppearedAt {
                 let elapsed = CACurrentMediaTime() - t0
                 if elapsed < badgeAnimDuration {
                     let p = elapsed / badgeAnimDuration
@@ -384,7 +420,9 @@ private final class TrailView: NSView {
                                     cornerWidth: 10, cornerHeight: 10,
                                     transform: t)
         }
-        if let mask = blurView.layer?.mask as? CAShapeLayer {
+        // Skip mask update when blur is disabled — blurView isn't
+        // even in the hierarchy then; the mask layer is moot.
+        if blurEnabled, let mask = blurView.layer?.mask as? CAShapeLayer {
             mask.path = maskPath
         }
     }
@@ -481,6 +519,13 @@ private final class HUDContentView: NSView {
             tx.concat()
             let bgPath = NSBezierPath(roundedRect: b.rect,
                                       xRadius: 10, yRadius: 10)
+            // Without blur the badge needs its own dark backdrop
+            // for icon contrast (otherwise the icon sits on whatever
+            // page content is behind the transparent overlay).
+            if !o.blurEnabled {
+                NSColor.black.withAlphaComponent(0.8).setFill()
+                bgPath.fill()
+            }
             b.border.withAlphaComponent(0.95).setStroke()
             bgPath.lineWidth = 2
             bgPath.stroke()

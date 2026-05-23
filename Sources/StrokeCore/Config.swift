@@ -36,6 +36,18 @@ public struct StrokeConfig: Sendable {
     public var overlayColor: String
     public var overlayColorNoMatch: String
     public var overlayWidth: Int
+    /// Show the target-app icon badge at the gesture origin?
+    /// Independent of `overlayEnabled` so a user can keep the trail
+    /// + assist tooltips but hide the badge alone.
+    public var overlayBadgeEnabled: Bool
+    /// Use the macOS frosted blur (`NSVisualEffectView`) under the
+    /// HUD cards + badge. `false` falls back to the older solid dark
+    /// fill — useful when blur feels heavy on the eyes or perf.
+    public var overlayBlurEnabled: Bool
+    /// Origin badge size in points. Clamped 32..96.
+    public var overlayBadgeSize: Int
+    /// Scale-in pop on the origin badge.
+    public var overlayAnimEnabled: Bool
 
     public static let `default` = StrokeConfig(
         trigger: Trigger(button: .right, modifiers: []),
@@ -49,7 +61,11 @@ public struct StrokeConfig: Sendable {
         overlayEnabled: true,
         overlayColor: "#3b82f6",
         overlayColorNoMatch: "#ef4444",
-        overlayWidth: 3
+        overlayWidth: 3,
+        overlayBadgeEnabled: true,
+        overlayBlurEnabled: true,
+        overlayBadgeSize: 56,
+        overlayAnimEnabled: true
     )
 
     /// The single source-of-truth path. Shared by `load()` and the
@@ -99,6 +115,11 @@ public struct StrokeConfig: Sendable {
         let overlayColorNoMatch = { let c = ov.string("color-no-match"); return c.isEmpty ? "#ef4444" : c }()
         let overlayWidth = clampInt(ov, key: "width",
                                     default: 3, lo: 1, hi: 40)
+        let overlayBadgeEnabled = ov.bool("badge-enabled", true)
+        let overlayBlurEnabled = ov.bool("blur-enabled", true)
+        let overlayBadgeSize = clampInt(ov, key: "badge-size",
+                                        default: 56, lo: 32, hi: 96)
+        let overlayAnimEnabled = ov.bool("anim-enabled", true)
 
         // Log every dropped rule with its position + reason so
         // `--validate` and the daemon log both surface them — silent
@@ -140,7 +161,11 @@ public struct StrokeConfig: Sendable {
             overlayEnabled: overlayEnabled,
             overlayColor: overlayColor,
             overlayColorNoMatch: overlayColorNoMatch,
-            overlayWidth: overlayWidth
+            overlayWidth: overlayWidth,
+            overlayBadgeEnabled: overlayBadgeEnabled,
+            overlayBlurEnabled: overlayBlurEnabled,
+            overlayBadgeSize: overlayBadgeSize,
+            overlayAnimEnabled: overlayAnimEnabled
         )
     }
 

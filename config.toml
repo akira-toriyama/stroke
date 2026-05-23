@@ -96,6 +96,26 @@ color-no-match = "#ef4444"
 # Stroke width in points. Clamped 1..40.
 width = 3
 
+# Show the target-app icon as a small "badge" at the gesture's
+# start point (where the right button went down). Confirms which
+# window the gesture will act on — useful when keyboard focus is
+# on a different window than the cursor is over. Off keeps just
+# the trail + assist tooltips.
+badge-enabled = true
+
+# Origin-badge size in points. Clamped 32..96.
+badge-size = 56
+
+# Use the macOS frosted blur (NSVisualEffectView) under the HUD
+# cards + badge. Set false to fall back to a solid dark fill —
+# easier on the eyes for some screens, and a touch cheaper.
+blur-enabled = true
+
+# Tiny scale-in pop (0.85 → 1.0 over 150 ms) when the origin
+# badge first appears. Decorative; set false if motion bothers
+# you.
+anim-enabled = true
+
 
 # -----------------------------------------------------------------
 # Rules — first match wins, applied to the cursor-anchored target

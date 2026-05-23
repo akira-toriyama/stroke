@@ -141,7 +141,11 @@ enum StrokeApp {
         if cfg.overlayEnabled {
             let overlay = GestureOverlay(match: cfg.overlayColor,
                                          noMatch: cfg.overlayColorNoMatch,
-                                         width: cfg.overlayWidth)
+                                         width: cfg.overlayWidth,
+                                         badgeEnabled: cfg.overlayBadgeEnabled,
+                                         blurEnabled: cfg.overlayBlurEnabled,
+                                         badgeSize: cfg.overlayBadgeSize,
+                                         animEnabled: cfg.overlayAnimEnabled)
             overlay.show()
             let rules = cfg.rules
             let excludes = cfg.excludeApps
