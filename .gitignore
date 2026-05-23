@@ -21,6 +21,3 @@ Stroke.iconset/
 
 # Logs (local dev)
 /tmp/*.log
-
-# Local-only scratch (user notes that should never reach the repo)
-TODO.md
