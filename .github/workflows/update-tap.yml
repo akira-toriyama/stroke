@@ -29,6 +29,9 @@ permissions:
 jobs:
   bump:
     runs-on: ubuntu-latest
+    # Bounded so a stuck `git push` against the tap repo can't hang
+    # forever — entire job is a few short network ops.
+    timeout-minutes: 5
     steps:
       - name: Resolve tag
         id: tag
@@ -92,5 +95,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Formula/stroke.rb
           git commit -m "homebrew: bump stroke to ${TAG}"
+          # Pull-rebase first: if the tap repo got a manual edit in
+          # the meantime, push would fail non-fast-forward and leave
+          # the release published but the tap stale. Rebasing keeps
+          # the auto-bump on top.
+          git pull --rebase
           git push
           echo "::notice::Bumped tap to ${TAG} (sha ${NEW_SHA:0:12}…)."

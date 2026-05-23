@@ -65,6 +65,14 @@ Releases are automated by [.github/workflows/release.yml](../.github/workflows/r
    at `akira-toriyama/homebrew-tap` to the new tag (requires
    `HOMEBREW_TAP_TOKEN` secret).
 
+> **HOMEBREW_TAP_TOKEN expires** (fine-grained PATs cap at 1 year). When it
+> does, `update-tap` will silently fail and a release will ship with no tap
+> bump. Rotate via **Settings → Developer settings → Fine-grained tokens**,
+> scope: *Contents: Read and write* on `akira-toriyama/homebrew-tap` only.
+> Update the `HOMEBREW_TAP_TOKEN` repo secret with the new value, then
+> re-run the failed `update-tap` workflow manually
+> (`gh workflow run update-tap.yml -f tag=vX.Y.Z`) — it's idempotent.
+
 `workflow_dispatch` with `dry_run=true` is a full preview (no draft, no
 version consumed). Non-bumping-only changes ⇒ the workflow no-ops.
 
