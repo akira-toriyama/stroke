@@ -1,20 +1,20 @@
 # Canonical copy of the Homebrew formula. The live copy lives in the tap repo
-# at akira-toriyama/homebrew-tap as Formula/stroke.rb. Keep this in sync and
+# at akira-toriyama/homebrew-tap as Formula/wand.rb. Keep this in sync and
 # bump `url` / `sha256` on every release tag (see packaging/homebrew/README.md).
 #
 # The release.yml workflow's `update-tap` job does the bump automatically when
 # a draft release is Published — this file is the manual-edit reference, not
 # what brew actually reads.
-class Stroke < Formula
-  desc "Global mouse-gesture daemon for macOS — acts on the window under the cursor"
-  homepage "https://github.com/akira-toriyama/stroke"
-  # Reference copy. The REAL sha256 lives only in the tap's Formula/stroke.rb
+class Wand < Formula
+  desc "macOS daemon for cursor-anchored mouse automation — gesture + launcher"
+  homepage "https://github.com/akira-toriyama/wand"
+  # Reference copy. The REAL sha256 lives only in the tap's Formula/wand.rb
   # (a sha cannot self-reference the tarball that contains it). Per-release
   # steps: packaging/homebrew/README.md.
-  url "https://github.com/akira-toriyama/stroke/archive/refs/tags/v1.0.0.tar.gz"
+  url "https://github.com/akira-toriyama/wand/archive/refs/tags/v3.0.0.tar.gz"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
-  head "https://github.com/akira-toriyama/stroke.git", branch: "main"
+  head "https://github.com/akira-toriyama/wand.git", branch: "main"
 
   # Builds with the Swift toolchain from Xcode *or* the Command Line Tools;
   # a full Xcode.app is not required. swift-tools-version 6.0 needs a Swift 6
@@ -25,10 +25,10 @@ class Stroke < Formula
     # No external SwiftPM deps; --disable-sandbox lets swiftpm write its cache.
     system "swift", "build", "--disable-sandbox", "-c", "release"
 
-    app = prefix/"Stroke.app"
+    app = prefix/"Wand.app"
     (app/"Contents/MacOS").mkpath
     cp "Info.plist", app/"Contents/Info.plist"
-    cp ".build/release/stroke", app/"Contents/MacOS/stroke"
+    cp ".build/release/wand", app/"Contents/MacOS/wand"
 
     # Ship the signing helper under share/ so users can recover the
     # persistent-TCC path later via `brew reinstall`, without needing to
@@ -57,83 +57,96 @@ class Stroke < Formula
     if sign_id == "-"
       opoo <<~EOS
         Could not set up a stable self-signed identity in the login keychain —
-        signed Stroke.app ad-hoc. The app works fine, but every
-        `brew upgrade stroke` produces a new code hash, so macOS will
+        signed Wand.app ad-hoc. The app works fine, but every
+        `brew upgrade wand` produces a new code hash, so macOS will
         re-prompt for Accessibility on every upgrade.
 
         To make grants persist across upgrades, run once after install:
           #{opt_pkgshare}/setup-signing-cert.sh
-          brew reinstall stroke
+          brew reinstall wand
 
         Verify:
-          codesign -dvv #{opt_prefix}/Stroke.app
-          # expect: Authority="stroke Local Signing"
+          codesign -dvv #{opt_prefix}/Wand.app
+          # expect: Authority="wand Local Signing"
       EOS
     else
-      ohai "Signed Stroke.app with stable self-signed identity " \
+      ohai "Signed Wand.app with stable self-signed identity " \
            "(\"#{sign_id}\") — TCC grants persist across upgrades."
     end
 
     # Same binary doubles as the thin CLI client (--reload / --quit / etc).
-    bin.install_symlink app/"Contents/MacOS/stroke" => "stroke"
+    bin.install_symlink app/"Contents/MacOS/wand" => "wand"
   end
 
-  # `brew services start stroke` → a LaunchAgent that runs the daemon at
+  # `brew services start wand` → a LaunchAgent that runs the daemon at
   # login. Runs the executable inside the bundle so TCC keys the
   # Accessibility grant to the same (persistent self-signed) identity
-  # the user granted to Stroke.app. keep_alive restarts it if it dies;
+  # the user granted to Wand.app. keep_alive restarts it if it dies;
   # an un-granted start doesn't crash (the app loop stays up), so this
   # won't hot-loop while the user is granting AX.
   service do
-    run [opt_prefix/"Stroke.app/Contents/MacOS/stroke"]
+    run [opt_prefix/"Wand.app/Contents/MacOS/wand"]
     keep_alive true
-    log_path var/"log/stroke.log"
-    error_log_path var/"log/stroke.log"
+    log_path var/"log/wand.log"
+    error_log_path var/"log/wand.log"
   end
 
   def caveats
     <<~EOS
-      stroke is a global mouse-gesture daemon (LSUIElement, no Dock icon).
-      It acts on the window UNDER the cursor — not the focused one — so
-      gestures land where you're pointing even on multi-display setups.
+      wand is a macOS daemon for cursor-anchored mouse automation
+      (LSUIElement, no Dock icon). Two trigger families share one daemon:
+
+        - gesture (mouse button + drag → recognise a LURD shape → fire)
+        - launcher (middle-click → contextual NSMenu, opt-in)
+
+      Both act on the window UNDER the cursor — not the focused one —
+      so actions land where you're pointing even on multi-display setups.
 
       First-run setup:
         1) Drop the config template:
-             curl --create-dirs -o ~/.config/stroke/config.toml \\
-               https://raw.githubusercontent.com/akira-toriyama/stroke/main/config.toml
+             curl --create-dirs -o ~/.config/wand/config.toml \\
+               https://raw.githubusercontent.com/akira-toriyama/wand/main/config.toml
         2) Launch the daemon once so macOS shows the AX prompt:
-             open #{opt_prefix}/Stroke.app
-        3) Grant Accessibility to "stroke" (System Settings → Privacy &
-           Security → Accessibility), then relaunch with `stroke`.
+             open #{opt_prefix}/Wand.app
+        3) Grant Accessibility to "wand" (System Settings → Privacy &
+           Security → Accessibility), then relaunch with `wand`.
 
       CLI (no daemon needed for these):
-        stroke --validate    parse config.toml
-        stroke --record      interactive recorder — draw, see the pattern
-        stroke --help        all flags
+        wand --validate    parse config.toml
+        wand --record      interactive recorder — draw, see the pattern
+        wand --help        all flags
 
       Client commands (talk to the running daemon over DNC):
-        stroke --reload      re-read config.toml live
-        stroke --quit        terminate the running daemon
+        wand --reload      re-read config.toml live
+        wand --quit        terminate the running daemon
+        wand --show-menu   external-trigger entry to the launcher menu
+                           (for `eventfx` text-selection observers etc.)
 
       Auto-start on login:
-        brew services start stroke
-        (or add #{opt_prefix}/Stroke.app to System Settings → General →
-        Login Items). Grant Accessibility to "stroke" first, or the
+        brew services start wand
+        (or add #{opt_prefix}/Wand.app to System Settings → General →
+        Login Items). Grant Accessibility to "wand" first, or the
         background daemon can't tap mouse events.
 
       Persistent Accessibility grants across `brew upgrade` need a stable
       code-signing identity. The install creates one automatically when it
       can; if the install printed a "fell back to ad-hoc" warning (or
-      `codesign -dvv #{opt_prefix}/Stroke.app` shows no Authority line),
+      `codesign -dvv #{opt_prefix}/Wand.app` shows no Authority line),
       run once:
         #{opt_pkgshare}/setup-signing-cert.sh
-        brew reinstall stroke
+        brew reinstall wand
+
+      Migrating from `stroke` (pre-v3.0):
+        mkdir -p ~/.config/wand && \\
+          mv ~/.config/stroke/config.toml ~/.config/wand/  2>/dev/null
+        brew uninstall stroke 2>/dev/null
+        # Re-grant Accessibility — Wand.app is a new bundle id to TCC.
     EOS
   end
 
   test do
-    assert_path_exists prefix/"Stroke.app/Contents/MacOS/stroke"
+    assert_path_exists prefix/"Wand.app/Contents/MacOS/wand"
     # --validate touches no event tap / AX — safe in the test sandbox.
-    system bin/"stroke", "--validate"
+    system bin/"wand", "--validate"
   end
 end
