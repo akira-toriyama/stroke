@@ -79,7 +79,7 @@ public struct Rule: Sendable, Equatable {
 public enum Action: Sendable, Equatable {
     case key(String)        // e.g. `cmd+w`; the target is raised first
     case ax(String)         // `verb` ∈ axVerbs (no focus switch)
-    case shell(String)      // env: STROKE_TARGET_BUNDLE_ID / PID / TITLE / FRAME
+    case shell(String)      // env: WAND_TARGET_BUNDLE_ID / PID / TITLE / FRAME
     case url(String)        // open via NSWorkspace — handles https / file / custom schemes
 
     /// Source of truth shared by config validation (a typo drops the

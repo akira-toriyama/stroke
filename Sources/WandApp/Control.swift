@@ -4,15 +4,15 @@
 // dispatch) posts to it and exits.
 //
 // Name is deliberately distinct from the bundle id
-// (`com.stroke.stroke`) so that the bundle id can change later
-// without breaking already-installed clients. Same trick facet
-// uses with `com.facet.app.control`.
+// (`com.wand.wand`) so the bundle id can change later without
+// breaking already-installed clients. Same trick facet uses with
+// `com.facet.app.control`.
 
 import Foundation
 
-let controlNotificationName = "com.stroke.app.control"
+let controlNotificationName = "com.wand.app.control"
 
 /// The running daemon rewrites this file on start / reload / each
-/// recognised gesture; `stroke --status` reads it. A plain file
+/// recognised gesture; `wand --status` reads it. A plain file
 /// sidesteps needing a request/response IPC channel (DNC is one-way).
-let statusPath = "/tmp/stroke.status"
+let statusPath = "/tmp/wand.status"

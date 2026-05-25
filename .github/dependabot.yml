@@ -1,10 +1,10 @@
-# Dependabot config for stroke.
+# Dependabot config for wand.
 #
 # - github-actions: 4 workflows (build / commit-lint / release /
 #   update-tap) pin third-party actions (checkout, setup-xcode,
 #   install-action, etc) by major version. Weekly update PRs keep
 #   them honest without flooding the inbox.
-# - Swift Package Manager intentionally omitted: stroke pulls zero
+# - Swift Package Manager intentionally omitted: wand pulls zero
 #   external SwiftPM dependencies (Apple frameworks only); same
 #   dependency policy facet follows.
 #

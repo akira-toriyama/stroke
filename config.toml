@@ -1,16 +1,16 @@
-# stroke — user configuration
-# https://github.com/akira-toriyama/stroke
+# wand — user configuration
+# https://github.com/akira-toriyama/wand
 #
-# This file is the **single source of truth** for stroke's settings.
-# stroke does NOT ship a GUI. Drop your edited copy at
-# ~/.config/stroke/config.toml:
+# This file is the **single source of truth** for wand's settings.
+# wand does NOT ship a GUI. Drop your edited copy at
+# ~/.config/wand/config.toml:
 #
-#   curl --create-dirs -o ~/.config/stroke/config.toml \
-#     https://raw.githubusercontent.com/akira-toriyama/stroke/main/config.toml
+#   curl --create-dirs -o ~/.config/wand/config.toml \
+#     https://raw.githubusercontent.com/akira-toriyama/wand/main/config.toml
 #
-# stroke only ever READS this file. Out-of-range / unknown values are
+# wand only ever READS this file. Out-of-range / unknown values are
 # silently clamped to safe defaults rather than rejected — a typo can
-# never break the daemon. Validate explicitly with `stroke --validate`.
+# never break the daemon. Validate explicitly with `wand --validate`.
 
 
 # -----------------------------------------------------------------
@@ -63,7 +63,7 @@ cancel-reversals = 2
 # Clamped 100..5000 when set.
 cancel-window-ms = 500
 
-# Bundle IDs where stroke is completely disabled — useful for apps
+# Bundle IDs where wand is completely disabled — useful for apps
 # that already have native gestures (Xcode, video editors, …).
 # Supports `*` / `?` glob.
 exclude-apps = []
@@ -171,7 +171,7 @@ intensity = "normal"
 #
 # Two changes that need a daemon restart (the tap is baked into the
 # event mask at install): `enabled = false ↔ true` and `button`.
-# Surfaced in `stroke --status` as `pending-restart`.
+# Surfaced in `wand --status` as `pending-restart`.
 [launcher]
 enabled = false                # opt-in
 button = "middle"              # "middle" | "side1" | "side2" | "right"
@@ -220,7 +220,7 @@ modifiers = []                 # e.g. ["ctrl"] to require ctrl + middle
 #   stroke-start**, NOT the focused app. So a gesture started while
 #   pointing at Chrome on display 2 always sees `*chrome*` even if
 #   Finder happens to be focused on display 1. This is the whole
-#   design point of stroke.
+#   design point of wand.
 #
 # `apps` syntax:
 #   "*"                 — match every bundle id
@@ -244,8 +244,8 @@ modifiers = []                 # e.g. ["ctrl"] to require ctrl + middle
 # releasing — make it human-readable.
 #
 # Shell actions receive these env vars describing the target:
-#   STROKE_TARGET_BUNDLE_ID, STROKE_TARGET_PID,
-#   STROKE_TARGET_TITLE,     STROKE_TARGET_FRAME (x,y,w,h)
+#   WAND_TARGET_BUNDLE_ID, WAND_TARGET_PID,
+#   WAND_TARGET_TITLE,     WAND_TARGET_FRAME (x,y,w,h)
 
 [[rules]]
 name = "close tab"

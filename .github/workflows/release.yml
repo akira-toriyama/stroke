@@ -9,9 +9,9 @@ name: Release
 # dry_run = full preview (no draft, no version consumed).
 # Config: cliff.toml.
 #
-# Per release we build Stroke.app via package.sh (ad-hoc signed for CI
+# Per release we build Wand.app via package.sh (ad-hoc signed for CI
 # — users get a stable self-signed identity via setup-signing-cert.sh
-# on install) and attach Stroke.zip to the draft. Homebrew installs
+# on install) and attach Wand.zip to the draft. Homebrew installs
 # from the source tarball GitHub generates automatically per tag (the
 # formula rebuilds locally and re-signs with the user's persistent
 # identity).
@@ -98,41 +98,41 @@ jobs:
           **Homebrew (build from source — recommended):**
 
           ```sh
-          brew install akira-toriyama/tap/stroke
-          curl --create-dirs -o ~/.config/stroke/config.toml \
-            https://raw.githubusercontent.com/akira-toriyama/stroke/main/config.toml
+          brew install akira-toriyama/tap/wand
+          curl --create-dirs -o ~/.config/wand/config.toml \
+            https://raw.githubusercontent.com/akira-toriyama/wand/main/config.toml
           ```
 
-          **Prebuilt (`Stroke.zip` below):** the app is ad-hoc signed
+          **Prebuilt (`Wand.zip` below):** the app is ad-hoc signed
           (not notarized), so macOS quarantines it on download. After
           unzipping into /Applications:
 
           ```sh
-          xattr -dr com.apple.quarantine /Applications/Stroke.app
-          open /Applications/Stroke.app
+          xattr -dr com.apple.quarantine /Applications/Wand.app
+          open /Applications/Wand.app
           ```
 
-          Then grant **Accessibility** to *stroke* (System Settings →
-          Privacy & Security → Accessibility). Start with `stroke` (or
-          `stroke --debug` to mirror logs to stderr). See
-          [README](https://github.com/akira-toriyama/stroke#readme)
+          Then grant **Accessibility** to *wand* (System Settings →
+          Privacy & Security → Accessibility). Start with `wand` (or
+          `wand --debug` to mirror logs to stderr). See
+          [README](https://github.com/akira-toriyama/wand#readme)
           for the rule schema and the `--reload` / `--quit` /
           `--record` flags.
           EOF
 
-      # Build Stroke.app via package.sh (ad-hoc for CI — the script
+      # Build Wand.app via package.sh (ad-hoc for CI — the script
       # picks $CODESIGN_ID > .signing-id > "-"). Same artifact users
-      # get when they download Stroke.zip from the release.
-      - name: Build Stroke.app + zip
+      # get when they download Wand.zip from the release.
+      - name: Build Wand.app + zip
         if: steps.ver.outputs.release == 'true'
         env:
           CODESIGN_ID: "-"
         run: |
           set -euo pipefail
           ./package.sh
-          ./Stroke.app/Contents/MacOS/stroke --validate
+          ./Wand.app/Contents/MacOS/wand --validate
           mkdir -p artifacts
-          ditto -c -k --sequesterRsrc --keepParent Stroke.app artifacts/Stroke.zip
+          ditto -c -k --sequesterRsrc --keepParent Wand.app artifacts/Wand.zip
 
       # dry_run (workflow_dispatch only): no draft; upload notes +
       # artifact so you can preview without consuming a version.
@@ -142,7 +142,7 @@ jobs:
         with:
           name: release-preview-${{ steps.ver.outputs.version }}
           path: |
-            artifacts/Stroke.zip
+            artifacts/Wand.zip
             RELEASE_NOTES.md
 
       - name: Dry-run summary
@@ -191,7 +191,7 @@ jobs:
             fi
           done < /tmp/drafts.txt
 
-          assets="artifacts/Stroke.zip"
+          assets="artifacts/Wand.zip"
           if [ "$have_current" -eq 1 ]; then
             gh release upload "$VERSION" $assets --clobber
             gh release edit "$VERSION" --draft \

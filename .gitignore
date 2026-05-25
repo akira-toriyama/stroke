@@ -14,7 +14,7 @@ Package.resolved
 
 # Icon generator scratch (scripts/make-icon.sh)
 .icon-build/
-Stroke.iconset/
+Wand.iconset/
 
 # Code signing (M5: setup-signing-cert.sh writes the identity name here)
 .signing-id

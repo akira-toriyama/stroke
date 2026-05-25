@@ -4,29 +4,44 @@ Guidance for working in this repository.
 
 ## What this is
 
-`stroke` (the binary / brand) → `wand` (the repo + Swift modules) —
-macOS daemon for **cursor-anchored mouse automation**. Two trigger
-families coexist on one daemon:
+`wand` — macOS daemon for **cursor-anchored mouse automation**. Two
+trigger families coexist on one daemon, with an external entry point
+for event-driven daemons to share the same launcher UI:
 
-- **gesture** (right-button + drag, the original feature): draw a
-  shape with the cursor; the recogniser turns it into a `LURD`
-  string; rules fire actions.
+- **gesture** (right-button + drag, the original "stroke" feature):
+  draw a shape with the cursor; the recogniser turns it into a
+  `LURD` string; rules fire actions.
 - **launcher** (middle-click, opt-in via `[launcher].enabled`):
   pops a native `NSMenu` near the cursor; each `[[item]]` is one
   row with the same action-type vocabulary.
+- **`wand --show-menu`** (external trigger CLI): other daemons
+  (`eventfx` text-selection / focus observers, …) post a
+  Distributed Notification carrying items + cursor + selection;
+  the daemon pops the same `LauncherMenu` against the frontmost
+  app. **Spine exception** — no button-down moment, see the
+  cursor-anchored section.
 
-Both share the **single invariant**: actions dispatch to the window
-the cursor was over **at button-down time**, never to whichever has
-focus by the time the action runs. On multi-display Macs the focused
-window is often on a different display from where you're pointing,
-so a gesture / launcher click aimed at e.g. a Chrome tab on display
-2 fires against *that* tab — not whatever happened to have focus on
-display 1.
+Both native triggers share the **single invariant**: actions dispatch
+to the window the cursor was over **at button-down time**, never to
+whichever has focus by the time the action runs. On multi-display
+Macs the focused window is often on a different display from where
+you're pointing, so a gesture / launcher click aimed at e.g. a
+Chrome tab on display 2 fires against *that* tab — not whatever
+happened to have focus on display 1.
 
-The binary is still named `stroke` (user-visible rename to `wand` is
-planned for v3.0 to avoid forcing a TCC re-grant). Repo / Swift
-modules / types use `Wand*`; `~/.config/stroke/config.toml`, bundle
-id `com.stroke.stroke`, and Homebrew formula `stroke` are intact.
+Names:
+- repo + binary + bundle + brand: `wand`, `com.wand.wand`,
+  `Wand.app`
+- config: `~/.config/wand/config.toml`
+- log / status: `/tmp/wand.{log,status}`
+- DNC channel: `com.wand.app.control`
+- shell-action env vars: `WAND_TARGET_*`
+- Swift modules: `WandCore` / `WandAdapterMacOS` / `WandAdapterTest`
+  / `WandApp`
+
+The domain term "stroke" (a drawn gesture) survives in identifiers
+like `minStrokePx`, `onStrokeEnd`, "stroke recognition" — that's
+the concept, not the project name. Don't rename those.
 
 Architecturally a sibling of
 [facet](https://github.com/akira-toriyama/facet) and
@@ -38,8 +53,8 @@ macOS 13+, three-layer hexagonal split.
 ```sh
 swift build                  # compile (CommandLineTools works)
 swift test                   # tests — needs Xcode (XCTest); fails on CLT
-.build/debug/stroke --help   # smoke test
-.build/debug/stroke --validate
+.build/debug/wand --help   # smoke test
+.build/debug/wand --validate
 ```
 
 Same XCTest constraint as facet — CommandLineTools alone can't
@@ -93,7 +108,7 @@ ws-tabs.
   promote it to its own module** unless a second UI surface appears.
   `MacOSMouseSource.onSample` / `onStrokeEnd` are the (non-`@Sendable`,
   main-thread-only) hooks that feed it; they're deliberately separate
-  from the protocol's `@Sendable` stroke `handler` so they can capture
+  from the protocol's `@Sendable` wand `handler` so they can capture
   the non-Sendable overlay.
 - **Shared adapter helpers** live in three single-purpose files; the
   invariants behind each are easy to regress if duplicated, so reach
@@ -116,7 +131,7 @@ ws-tabs.
 
 ### The cursor-anchored spine — DO NOT regress this
 
-The whole point of stroke is that **actions dispatch to the
+The whole point of wand is that **actions dispatch to the
 cursor-anchored target window**, not to the focused window.
 Everything below depends on this contract:
 
@@ -144,10 +159,10 @@ Everything below depends on this contract:
   `AXUIElementPerformAction` directly. Less disruption, no
   focus stolen. Prefer `ax` for close/minimize/zoom.
 - `.shell(...)` actions get the target identity via env vars
-  (`STROKE_TARGET_BUNDLE_ID`, `STROKE_TARGET_PID`,
-  `STROKE_TARGET_TITLE`, `STROKE_TARGET_FRAME`) — the user's
+  (`WAND_TARGET_BUNDLE_ID`, `WAND_TARGET_PID`,
+  `WAND_TARGET_TITLE`, `WAND_TARGET_FRAME`) — the user's
   command can decide what to do with that information.
-- **`stroke --show-menu` is the documented spine exception.**
+- **`wand --show-menu` is the documented spine exception.**
   External event-driven daemons (the planned `eventfx`, which
   observes things like text-selection notifications and has no
   button-down moment to anchor against) post `show-menu` over the
@@ -159,7 +174,7 @@ Everything below depends on this contract:
   click launcher (the native trigger families); `--show-menu` is
   documented as the carve-out. `$SELECTION` is the only extra env
   var added (via `Dispatch.execute(extraEnv:)`); the
-  `STROKE_TARGET_*` set is still populated, just from the
+  `WAND_TARGET_*` set is still populated, just from the
   frontmost app instead of a cursor-anchored window. See
   [Sources/WandApp/Controller.swift](Sources/WandApp/Controller.swift)'s
   `handleShowMenu`.
@@ -167,12 +182,12 @@ Everything below depends on this contract:
 ### Configuration
 
 - **`config.toml` at the repo root is the source-of-truth
-  template**. Users `curl` it into `~/.config/stroke/config.toml`
+  template**. Users `curl` it into `~/.config/wand/config.toml`
   (see [README.md](README.md) Configuration section).
   **The app only reads it** — never writes, never auto-generates
   an example, never persists runtime overrides. Same policy as
   facet: the file is the only thing the user has to look at to
-  know what stroke will do.
+  know what wand will do.
 - **There is no settings GUI** — by design. Don't propose
   adding NSPanel-based preferences. The user can already see
   every option in one TOML file. Memory: facet's
@@ -180,7 +195,7 @@ Everything below depends on this contract:
 - **All TOML keys clamp out-of-range / unknown values to defaults**
   rather than rejecting. A typo can never break gesture
   recognition — the rule with the typo silently drops, the rest
-  still load. `stroke --validate` is the explicit verification
+  still load. `wand --validate` is the explicit verification
   path.
 
 ### TOML parser
@@ -235,8 +250,8 @@ Everything below depends on this contract:
 - **`Log` lives in `WandCore`** so both the Adapter and App
   modules can call it without crossing layer rules. Two
   functions: `Log.line` (always on) and `Log.debug` (gated by
-  `debugMode`, set from `stroke --debug` at startup).
-- **Both write to `/tmp/stroke.log`**; `--debug` also mirrors to
+  `debugMode`, set from `wand --debug` at startup).
+- **Both write to `/tmp/wand.log`**; `--debug` also mirrors to
   stderr so foreground users see events live.
 - **Use `Log.debug` liberally** in EventTap / dispatch hot paths.
   It costs one bool check when disabled. Skip per-sample logging
@@ -244,16 +259,16 @@ Everything below depends on this contract:
 
 ### Debugging — how Claude Code observes a running daemon
 
-stroke is **headless** (`LSUIElement`, no Dock icon, no window).
+wand is **headless** (`LSUIElement`, no Dock icon, no window).
 The agent cannot "look at the screen" to see what it's doing — so
 the daemon is built to be debuggable entirely from the terminal.
 The workflow:
 
 1. **Run in the foreground with `--debug`** so events stream live:
-   `.build/debug/stroke --debug`. This sets `debugMode = true`
+   `.build/debug/wand --debug`. This sets `debugMode = true`
    (enables `Log.debug`) and mirrors every log line to stderr in
-   addition to `/tmp/stroke.log`.
-2. **Tail the log** from a second shell: `tail -f /tmp/stroke.log`.
+   addition to `/tmp/wand.log`.
+2. **Tail the log** from a second shell: `tail -f /tmp/wand.log`.
    This is the single source of observability — there is nothing
    else to inspect.
 3. **Read the trace.** A gesture that fires end-to-end logs, in
@@ -277,19 +292,19 @@ The workflow:
    - `target=nil` (with a recognised pattern) → cursor was over a
      non-AX surface (Dock, menu bar, desktop); the gesture is
      dropped on purpose.
-5. **Isolate recognition** with `stroke --record` — it streams
+5. **Isolate recognition** with `wand --record` — it streams
    `pattern=… samples=… max|dx|=… target=…` to stdout for every
    stroke and fires **no actions**, so you can confirm the
    capture+recognition half without side effects. (Refuses if the
    daemon is already running — they'd fight over the tap.)
-6. **Check config** with `stroke --validate` (exit 0 + rule count,
+6. **Check config** with `wand --validate` (exit 0 + rule count,
    or exit 2).
 
 **Known external interference to suspect first:** virtual-HID
 remappers (Karabiner-Elements, Logitech Options, some KVMs) can
 deliver button-held motion as `.mouseMoved` instead of
 `.rightMouseDragged`, or swallow the drag entirely. The classic
-symptom is `samples=1` on every stroke. stroke masks `.mouseMoved`
+symptom is `samples=1` on every stroke. wand masks `.mouseMoved`
 to survive this; if a new "no samples" report appears, check
 what's intercepting the HID stream before touching the tap code.
 
@@ -298,19 +313,19 @@ binary, which can drop the Accessibility grant — the symptom is
 `event-tap: tapCreate failed` in the log and no events at all.
 Re-grant in System Settings, or use the persistent cert
 (`setup-signing-cert.sh`) so the grant survives. Use
-`pgrep -lf stroke` to see what's running and `./stop.sh` to clear
+`pgrep -lf wand` to see what's running and `./stop.sh` to clear
 stray instances before relaunching.
 
 ### Bundle / signing
 
-- **Bundle id is `com.stroke.stroke`** (set in
+- **Bundle id is `com.wand.wand`** (set in
   [Info.plist](Info.plist)). TCC keys the Accessibility grant
   to the code-signing identity, so ad-hoc signing loses the
   grant on every rebuild. [setup-signing-cert.sh](setup-signing-cert.sh)
   creates a persistent self-signed cert so the grant survives
-  rebuilds; [package.sh](package.sh) assembles `Stroke.app` and
+  rebuilds; [package.sh](package.sh) assembles `Wand.app` and
   signs it with that identity (`--dev` →
-  `Stroke-dev.app` / `com.stroke.stroke.dev` to co-exist with a
+  `Wand-dev.app` / `com.wand.wand.dev` to co-exist with a
   Homebrew install without TCC collision). Same pattern as facet.
 - **`LSUIElement = true`** — no Dock icon, no menubar item. The
   daemon is intentionally invisible.
@@ -331,14 +346,14 @@ stray instances before relaunching.
   torn down). Exit 1 if AX/tap fail. **`--test PATTERN [bundle-id]`**
   dry-runs `Matcher` against config (no event tap touched).
 - **`--reload` / `--quit` talk to the running daemon over
-  Distributed Notification Center** (`com.stroke.app.control`,
+  Distributed Notification Center** (`com.wand.app.control`,
   see [Sources/WandApp/Control.swift](Sources/WandApp/Control.swift)
   + `Controller.installCLIControl`) — same pattern as facet.
   Don't invent a different IPC. They exit `3` if no daemon is
   running; `--record` exits `3` if one *is* (tap conflict).
 - **`--status` is one-way the other direction**: DNC can't reply, so
   the daemon rewrites a small status file (`statusPath` =
-  `/tmp/stroke.status`) on start / reload / each recognised gesture,
+  `/tmp/wand.status`) on start / reload / each recognised gesture,
   and `--status` just reads it. Don't reach for a request/response
   IPC — the file is enough.
 - **Config auto-reload**: `ConfigWatcher`
@@ -348,7 +363,7 @@ stray instances before relaunching.
   atomic-save rename/delete). `--reload` is now just the manual
   trigger for the same path.
 - **Login auto-start**: the Homebrew formula's `service do` block
-  (`brew services start stroke`) runs the bundle's executable via
+  (`brew services start wand`) runs the bundle's executable via
   launchd; `keep_alive` is safe because an un-granted start doesn't
   crash (the app loop stays up).
 
@@ -366,7 +381,7 @@ stray instances before relaunching.
 
 ## References
 
-External material that informed stroke's API / architecture
+External material that informed wand's API / architecture
 decisions. Subsections ordered broad → narrow.
 
 ### Architecture

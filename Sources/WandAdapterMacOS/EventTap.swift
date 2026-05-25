@@ -86,7 +86,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
     private static let replaySentinel: Int64 = 0x5354_524B_E115
 
     /// Probe whether a session event tap can be installed right now —
-    /// the definitive Accessibility check for `stroke --doctor`. Creates
+    /// the definitive Accessibility check for `wand --doctor`. Creates
     /// a listen-only tap, never adds it to a run loop, and tears it down
     /// immediately (safe alongside a running daemon — taps coexist).
     public static func canInstallTap() -> Bool {
@@ -153,7 +153,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
             userInfo: userInfo
         ) else {
             Log.line("event-tap: tapCreate failed — is Accessibility "
-                     + "granted? (stroke needs the AX entitlement to "
+                     + "granted? (wand needs the AX entitlement to "
                      + "tap the session event stream)")
             return
         }

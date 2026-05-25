@@ -75,7 +75,7 @@ jobs:
           NEW_SHA: ${{ steps.sha.outputs.sha }}
         run: |
           set -euo pipefail
-          f="tap/Formula/stroke.rb"
+          f="tap/Formula/wand.rb"
           # No-op when the formula already matches.
           if grep -q "archive/refs/tags/${TAG}.tar.gz" "$f" \
              && grep -q "sha256 \"${NEW_SHA}\"" "$f"; then
@@ -93,8 +93,8 @@ jobs:
           cd tap
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Formula/stroke.rb
-          git commit -m "homebrew: bump stroke to ${TAG}"
+          git add Formula/wand.rb
+          git commit -m "homebrew: bump wand to ${TAG}"
           # Pull-rebase first: if the tap repo got a manual edit in
           # the meantime, push would fail non-fast-forward and leave
           # the release published but the tap stale. Rebasing keeps

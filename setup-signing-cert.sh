@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Create a persistent self-signed code-signing identity in the LOGIN
-# keychain so that the Accessibility (TCC) grant for Stroke.app
+# keychain so that the Accessibility (TCC) grant for Wand.app
 # survives rebuilds.
 #
 # Run ONCE. macOS may prompt to unlock your login keychain — that is
@@ -17,12 +17,12 @@
 # to reach the login keychain (sandbox + non-interactive). The
 # Homebrew formula tries this script first and falls back to ad-hoc
 # with a LOUD warning if it can't. Users who want persistent grants
-# across `brew upgrade stroke` should run this script + `brew
-# reinstall stroke` once.
+# across `brew upgrade wand` should run this script + `brew
+# reinstall wand` once.
 set -e
 cd "$(dirname "$0")"
 
-CN="stroke Local Signing"
+CN="wand Local Signing"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
 # Idempotency: a self-signed cert that isn't trusted does NOT appear
@@ -69,7 +69,7 @@ openssl req -x509 -newkey rsa:2048 -nodes \
 # Legacy PKCS12 (SHA1 MAC / 3DES) + a password: required for Apple's
 # `security` to import OpenSSL 3 output without "MAC verification
 # failed".
-P12PW="stroke"
+P12PW="wand"
 openssl pkcs12 -export -legacy -macalg sha1 \
   -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES \
   -inkey "$TMP/key.pem" -in "$TMP/cert.pem" \
@@ -86,4 +86,4 @@ echo "created identity: $CN"
 # still uses it by name.
 security find-certificate -c "$CN" -Z "$KEYCHAIN" 2>/dev/null \
   | grep 'SHA-1 hash' || true
-echo "now run: ./run.sh   (it will sign Stroke.app with this identity)"
+echo "now run: ./run.sh   (it will sign Wand.app with this identity)"

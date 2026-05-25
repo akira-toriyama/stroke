@@ -7,16 +7,16 @@ body:
     attributes:
       value: |
         Thanks for the report. The most useful single thing you can attach is the
-        output of `stroke --doctor` plus the relevant tail of `/tmp/stroke.log`
-        (run the daemon with `stroke --debug` for a full trace).
+        output of `wand --doctor` plus the relevant tail of `/tmp/wand.log`
+        (run the daemon with `wand --debug` for a full trace).
 
   - type: textarea
     id: doctor
     attributes:
-      label: stroke --doctor
+      label: wand --doctor
       description: Paste the output. It includes the version, Accessibility state, config path, tuned values, and rule list.
       placeholder: |
-        stroke doctor
+        wand doctor
           ✓  Accessibility: granted
           …
       render: shell
@@ -26,7 +26,7 @@ body:
   - type: textarea
     id: log
     attributes:
-      label: /tmp/stroke.log excerpt
+      label: /tmp/wand.log excerpt
       description: |
         The trace from the failing gesture. The gold-standard trace is
         `event-tap: down → AX: resolved → event-tap: up → controller: recognised → controller: → rule → dispatch.…`
@@ -72,7 +72,7 @@ body:
   - type: input
     id: install
     attributes:
-      label: How did you install stroke?
-      placeholder: "brew install akira-toriyama/tap/stroke / built from source / Stroke.zip from a Release"
+      label: How did you install wand?
+      placeholder: "brew install akira-toriyama/tap/wand / built from source / Wand.zip from a Release"
     validations:
       required: true

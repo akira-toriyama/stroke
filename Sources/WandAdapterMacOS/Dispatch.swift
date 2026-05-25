@@ -10,7 +10,7 @@ import WandCore
 public enum Dispatch {
 
     /// `extraEnv` lets an external trigger inject env vars on top of
-    /// the standard `STROKE_TARGET_*` set — `--show-menu --selection
+    /// the standard `WAND_TARGET_*` set — `--show-menu --selection
     /// "..."` reaches shell actions as `$SELECTION` via this. Empty
     /// default keeps native-trigger callsites (gesture, launcher)
     /// unchanged.
@@ -196,12 +196,12 @@ public enum Dispatch {
     ///
     /// SECURITY: the command string itself comes from the user's own
     /// `config.toml` and is treated as trusted (the user wrote it).
-    /// The four `STROKE_TARGET_*` env vars however carry **untrusted**
-    /// data — `STROKE_TARGET_TITLE` is a web page title, window title,
+    /// The four `WAND_TARGET_*` env vars however carry **untrusted**
+    /// data — `WAND_TARGET_TITLE` is a web page title, window title,
     /// or document name and can contain arbitrary characters including
     /// `$( )` and backticks. Authors writing `.shell` actions MUST
     /// quote any env-var expansion that reaches a shell command line.
-    /// Example: `echo "$STROKE_TARGET_TITLE"`, not `echo $STROKE_TARGET_TITLE`.
+    /// Example: `echo "$WAND_TARGET_TITLE"`, not `echo $WAND_TARGET_TITLE`.
     private static func runShell(_ cmd: String, target: Target,
                                   extraEnv: [String: String] = [:]) {
         Log.line("dispatch.shell: \(cmd) (target \(target.bundleID))")
@@ -209,14 +209,14 @@ public enum Dispatch {
         p.executableURL = URL(fileURLWithPath: "/bin/sh")
         p.arguments = ["-c", cmd]
         var env = ProcessInfo.processInfo.environment
-        env["STROKE_TARGET_BUNDLE_ID"] = target.bundleID
-        env["STROKE_TARGET_PID"] = String(target.pid)
-        env["STROKE_TARGET_TITLE"] = target.title
-        env["STROKE_TARGET_FRAME"] =
+        env["WAND_TARGET_BUNDLE_ID"] = target.bundleID
+        env["WAND_TARGET_PID"] = String(target.pid)
+        env["WAND_TARGET_TITLE"] = target.title
+        env["WAND_TARGET_FRAME"] =
             "\(Int(target.frame.minX)),\(Int(target.frame.minY))," +
             "\(Int(target.frame.width)),\(Int(target.frame.height))"
         // Caller-supplied env — currently `$SELECTION` from --show-menu.
-        // Same untrusted-input caveat as STROKE_TARGET_TITLE: quote any
+        // Same untrusted-input caveat as WAND_TARGET_TITLE: quote any
         // expansion that hits a shell command line.
         for (k, v) in extraEnv { env[k] = v }
         p.environment = env

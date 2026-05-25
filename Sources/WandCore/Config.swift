@@ -1,4 +1,4 @@
-// stroke is config.toml-driven, read-only from the daemon's
+// wand is config.toml-driven, read-only from the daemon's
 // perspective: the file is the source of truth, the CLI never writes
 // it. Unknown / out-of-range values clamp to defaults — a typo can
 // never break recognition.
@@ -88,10 +88,10 @@ public struct WandConfig: Sendable {
 
     /// The single source-of-truth path. Shared by `load()` and the
     /// app's file watcher so both point at the same file.
-    public static let path = NSString(string: "~/.config/stroke/config.toml")
+    public static let path = NSString(string: "~/.config/wand/config.toml")
         .expandingTildeInPath
 
-    /// Read ~/.config/stroke/config.toml. Missing file → defaults,
+    /// Read ~/.config/wand/config.toml. Missing file → defaults,
     /// no error (same agent-friendly behaviour as facet).
     public static func load() -> WandConfig {
         guard let text = try? String(contentsOfFile: path, encoding: .utf8)
@@ -103,7 +103,7 @@ public struct WandConfig: Sendable {
     }
 
     /// Parse a TOML document containing only `[[item]]` entries — the
-    /// schema `stroke --show-menu --items <PATH>` expects. Same
+    /// schema `wand --show-menu --items <PATH>` expects. Same
     /// row-level validation as `[launcher]` items in the main config
     /// (drop on missing name / invalid action, with a loud log line),
     /// so a client that screws up the file gets a diagnostic.

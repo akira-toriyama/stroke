@@ -1,4 +1,4 @@
-# stroke
+# wand
 
 ![platform](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey)
 ![swift](https://img.shields.io/badge/Swift-6.0-orange)
@@ -7,7 +7,7 @@
 **English** · [日本語](README.ja.md)
 
 A global mouse-gesture daemon for macOS. Hold a mouse button, draw a
-short shape with the cursor — down, then right — and stroke fires an
+short shape with the cursor — down, then right — and wand fires an
 action: close a tab, reopen one, minimize a window, run a shell
 command. The action runs against the window the cursor was over when
 you started drawing.
@@ -15,14 +15,14 @@ you started drawing.
 ## Gestures
 
 Draw with the trigger button held down (right mouse by default). A
-stroke is a sequence of cardinal directions:
+wand is a sequence of cardinal directions:
 
 ```
 L = left    U = up    R = right    D = down
 ```
 
 So `DR` is down-then-right, `URD` is up → right → down. When you
-release the button, stroke matches the shape against your rules and
+release the button, wand matches the shape against your rules and
 runs the first match. A shape that matches nothing — or barely
 moving at all — does nothing, and a plain click still behaves like a
 normal click.
@@ -41,7 +41,7 @@ while the shape so far fires a rule, no-match color once it doesn't.
 Around the cursor, small cards lay out **what's reachable from here**
 in the direction of each card's next arrow, and the one that fires
 right now is tinted in the match color. At the gesture's start point
-a small badge shows the **target app's icon** so the window stroke
+a small badge shows the **target app's icon** so the window wand
 will act on is unambiguous even when keyboard focus sits elsewhere.
 
 Colors, width, on/off, and per-piece toggles (badge / blur / size /
@@ -61,7 +61,7 @@ variables.
 
 ## Launcher (opt-in)
 
-stroke also ships a **middle-click contextual menu** as a second
+wand also ships a **middle-click contextual menu** as a second
 trigger. Off by default — set `[launcher].enabled = true` in your
 config and the daemon installs a second event tap alongside the
 gesture one. The menu is a native macOS `NSMenu` (submenus,
@@ -91,36 +91,36 @@ action-cmd = "echo name"
 ## Install
 
 ```sh
-brew install akira-toriyama/tap/stroke
-curl --create-dirs -o ~/.config/stroke/config.toml \
-  https://raw.githubusercontent.com/akira-toriyama/stroke/main/config.toml
-open "$(brew --prefix)/opt/stroke/Stroke.app"   # triggers AX prompt
+brew install akira-toriyama/tap/wand
+curl --create-dirs -o ~/.config/wand/config.toml \
+  https://raw.githubusercontent.com/akira-toriyama/wand/main/config.toml
+open "$(brew --prefix)/opt/wand/Wand.app"   # triggers AX prompt
 ```
 
-Then grant **Accessibility** to *stroke* (System Settings → Privacy
-& Security → Accessibility) and launch the daemon with `stroke`.
+Then grant **Accessibility** to *wand* (System Settings → Privacy
+& Security → Accessibility) and launch the daemon with `wand`.
 
 To start it automatically at login:
 
 ```sh
-brew services start stroke
+brew services start wand
 ```
 
-The formula bundles a `Stroke.app` (LSUIElement — no Dock icon) plus
+The formula bundles a `Wand.app` (LSUIElement — no Dock icon) plus
 a stable self-signed code-signing identity created in your login
 keychain on first install, so the Accessibility grant persists across
-`brew upgrade stroke`. If the keychain isn't reachable during install,
+`brew upgrade wand`. If the keychain isn't reachable during install,
 the formula falls back to ad-hoc signing and prints a loud warning
 with a one-line recovery path. Details:
 [packaging/homebrew/](packaging/homebrew/).
 
 ## Configuration
 
-stroke is **config.toml-driven** — there is no settings GUI by
+wand is **config.toml-driven** — there is no settings GUI by
 design. The `curl` line above drops the template at
-`~/.config/stroke/config.toml`. Out-of-range / unknown values clamp
+`~/.config/wand/config.toml`. Out-of-range / unknown values clamp
 silently to defaults — a typo can never break the daemon. Validate
-explicitly with `stroke --validate`.
+explicitly with `wand --validate`.
 
 A rule looks like this:
 
@@ -137,7 +137,7 @@ Pattern alphabet is `L U R D` (left / up / right / down) —
 **no consecutive duplicates**, because the recogniser coalesces
 same-direction motion into one segment (`LLLL…` is `L`, not `LL`).
 A rule whose pattern repeats a direction (`DRR`, `LL`, …) is
-unreachable; `stroke --validate` drops it loudly. Scroll-axis
+unreachable; `wand --validate` drops it loudly. Scroll-axis
 directions are not recognised yet. Action types are `key` (a
 keystroke), `ax` (`close` / `minimize` / `zoom` / `raise`), and
 `shell` (any command), `url` (`https://`, `slack://`, `file://`,
@@ -197,19 +197,19 @@ default is `normal`.
 ## CLI
 
 ```sh
-stroke                    # run as agent (CGEventTap loop)
-stroke --debug            # verbose log to /tmp/stroke.log + stderr
+wand                    # run as agent (CGEventTap loop)
+wand --debug            # verbose log to /tmp/wand.log + stderr
 
-stroke --validate         # parse config.toml, exit 0/2
-stroke --doctor           # health check: Accessibility, config, daemon, tap
-stroke --test DR [app]    # dry-run: which rule fires for a pattern
-stroke --record           # interactive recorder — draw a gesture, get a
+wand --validate         # parse config.toml, exit 0/2
+wand --doctor           # health check: Accessibility, config, daemon, tap
+wand --test DR [app]    # dry-run: which rule fires for a pattern
+wand --record           # interactive recorder — draw a gesture, get a
                           # paste-ready [[rules]] snippet on stdout
 
-stroke --status           # rule count, trigger, last gesture
-stroke --reload           # re-read config.toml (also automatic on save)
-stroke --quit             # terminate the running daemon
-stroke --help
+wand --status           # rule count, trigger, last gesture
+wand --reload           # re-read config.toml (also automatic on save)
+wand --quit             # terminate the running daemon
+wand --help
 ```
 
 The daemon **auto-reloads `config.toml` on save** — `--reload` is the
@@ -226,8 +226,8 @@ would fight over the same CGEventTap.
   overlay disabled, the window was never created; flipping it on
   later has nothing to attach to
 
-Both surface in `stroke --status` as a `pending-restart:` line, and
-in `/tmp/stroke.log` at reload time.
+Both surface in `wand --status` as a `pending-restart:` line, and
+in `/tmp/wand.log` at reload time.
 
 ## Contributing
 
@@ -240,27 +240,27 @@ Enable the local hook with `git config core.hooksPath scripts/hooks`.
 ```sh
 swift build                       # compile (CommandLineTools is enough)
 swift test                        # needs Xcode for XCTest
-.build/debug/stroke --help        # smoke test
+.build/debug/wand --help        # smoke test
 ```
 
-For a local `Stroke.app` with persistent Accessibility grant:
+For a local `Wand.app` with persistent Accessibility grant:
 
 ```sh
 ./setup-signing-cert.sh           # once — creates stable self-signed cert
-./run.sh                          # ./package.sh + open Stroke.app
-./run.sh --dev                    # → Stroke-dev.app (com.stroke.stroke.dev)
+./run.sh                          # ./package.sh + open Wand.app
+./run.sh --dev                    # → Wand-dev.app (com.wand.wand.dev)
                                   #   for parallel testing alongside a
                                   #   Homebrew install without TCC collision
-./stop.sh                         # kill everything stroke
+./stop.sh                         # kill everything wand
 ```
 
 ## Troubleshooting
 
 **`event-tap: tapCreate failed — is Accessibility granted?`** in
-`/tmp/stroke.log`. macOS dropped (or never had) the Accessibility
+`/tmp/wand.log`. macOS dropped (or never had) the Accessibility
 grant for this binary. Two ways out:
 - **Quick**: re-grant in System Settings → Privacy & Security →
-  Accessibility (toggle the `stroke` / `Stroke` entry off and on, or
+  Accessibility (toggle the `wand` entry off and on, or
   `+` the binary if missing). Re-launch.
 - **Sticky**: run `./setup-signing-cert.sh` once. It creates a stable
   self-signed cert in the login keychain; `package.sh` / `run.sh`
@@ -273,10 +273,10 @@ grant for this binary. Two ways out:
 -v` filters for codesigning-trusted identities, and a self-signed
 cert isn't trusted as a CA. The cert is still in the keychain and
 `codesign --sign "<name>"` finds it by Common Name. Confirm with
-`security find-certificate -c "stroke Local Signing"`.
+`security find-certificate -c "wand Local Signing"`.
 
 **Gesture doesn't fire on a Chrome page's content area.** The AX
-walk-to-window fails through Chrome's renderer process; stroke falls
+walk-to-window fails through Chrome's renderer process; wand falls
 back to `CGWindowListCopyWindowInfo`. The log line reads
 `AX: resolved … via cg-window → com.google.Chrome …` — if you see
 `via ax-walk` for the same area you're fine. If you see neither,
@@ -284,7 +284,7 @@ the cursor was likely on the menu bar / Dock / desktop.
 
 **A rule with `pattern = "DRR"` or similar repeats never fires.** By
 design — the recogniser coalesces same-direction motion, so `DRR`
-is unreachable. `stroke --validate` drops the rule loudly. Use
+is unreachable. `wand --validate` drops the rule loudly. Use
 distinct directions per segment (`DR` plus a follow-on like `DRU`).
 
 ## License

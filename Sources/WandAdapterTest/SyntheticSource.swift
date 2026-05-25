@@ -3,7 +3,7 @@
 // Lets a unit test feed a hand-built `[Sample]` (plus a fake Target)
 // into the same recognition + matching path the real adapter uses,
 // without needing a CGEventTap or AX permission. Also useful as the
-// driver behind `stroke --record`'s "play back the saved fixture and
+// driver behind `wand --record`'s "play back the saved fixture and
 // show what would be recognised" mode.
 
 import CoreGraphics

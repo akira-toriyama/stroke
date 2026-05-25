@@ -1,5 +1,5 @@
 // Wires MouseSource → Recognition → Matcher → Dispatch, plus the
-// DNC IPC channel used by `stroke --reload` / `stroke --quit`. Lives
+// DNC IPC channel used by `wand --reload` / `wand --quit`. Lives
 // in App (not Core) because adapter selection and IPC are startup
 // concerns. `@unchecked Sendable` because `config` mutation lives
 // only on the main thread (stroke handler + DNC observer both run
@@ -28,7 +28,7 @@ public final class Controller: @unchecked Sendable {
     /// the assist tooltips would stay frozen at startup rules while
     /// dispatch already saw the new ones.
     public private(set) var config: WandConfig
-    /// Last few recognised gestures (newest last), for `stroke --status` —
+    /// Last few recognised gestures (newest last), for `wand --status` —
     /// a ring buffer big enough to read out "user drew DR then D then DRU"
     /// while diagnosing remotely.
     private var recentGestures: [String] = []
@@ -244,7 +244,7 @@ public final class Controller: @unchecked Sendable {
     }
 
 
-    /// Re-read `~/.config/stroke/config.toml` and swap the in-memory
+    /// Re-read `~/.config/wand/config.toml` and swap the in-memory
     /// config. Rules, excludes, every `[recognition]` timing knob, and
     /// (mostly) the full `[overlay]` block apply live. Two transitions
     /// require a full daemon restart, since the underlying object was
