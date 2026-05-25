@@ -7,7 +7,7 @@
 header = """
 # Changelog
 
-Release history of stroke.\n
+Release history of wand.\n
 """
 body = """
 {% if version %}\

@@ -1,7 +1,7 @@
 // Two-level log: `Log.line` always-on, `Log.debug` gated by
 // `debugMode` (set once at startup from `--debug`). Both write to
-// /tmp/stroke.log; stderr only mirrors under --debug so a
-// backgrounded `stroke &` doesn't pollute the launching shell.
+// /tmp/wand.log; stderr only mirrors under --debug so a
+// backgrounded `wand &` doesn't pollute the launching shell.
 
 import Foundation
 
@@ -9,7 +9,7 @@ import Foundation
 nonisolated(unsafe) public var debugMode = false
 
 public enum Log {
-    public static let path = "/tmp/stroke.log"
+    public static let path = "/tmp/wand.log"
 
     public static func line(_ s: String) {
         emit(s, prefix: "")

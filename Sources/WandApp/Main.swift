@@ -18,27 +18,27 @@ enum WandApp {
 
     static func printHelp() -> Never {
         let help = """
-        stroke — global mouse-gesture daemon for macOS.
+        wand — global mouse-gesture daemon for macOS.
 
         USAGE
-          stroke                       run as agent (CGEventTap loop)
-          stroke [COMMAND]             one-shot client command
+          wand                       run as agent (CGEventTap loop)
+          wand [COMMAND]             one-shot client command
 
         SERVER MODE
-          stroke                       run as agent
-          stroke --debug               verbose log to stderr +
-                                       /tmp/stroke.log
+          wand                       run as agent
+          wand --debug               verbose log to stderr +
+                                       /tmp/wand.log
 
         CLIENT COMMANDS — need a running daemon (exit 3 if none)
-          stroke --reload              re-read ~/.config/stroke/config.toml
+          wand --reload              re-read ~/.config/wand/config.toml
                                        (also automatic on file save).
                                        Live: [[rules]] / exclude-apps /
                                        [recognition] timing / [overlay].
                                        Restart only: [trigger].
-          stroke --status              print rule count, trigger, last
+          wand --status              print rule count, trigger, last
                                        gestures, counters, last reload
-          stroke --quit                terminate the running daemon
-          stroke --show-menu           ask the daemon to pop the launcher
+          wand --quit                terminate the running daemon
+          wand --show-menu           ask the daemon to pop the launcher
             --items <PATH>             menu at a screen point with the
             --at <X> <Y>               given [[item]] file. Cocoa coords
             [--selection <TEXT>]       (Y-up). For event-driven triggers
@@ -47,21 +47,21 @@ enum WandApp {
                                        actions if --selection given.
 
         STANDALONE COMMANDS — no daemon required (--record refuses if one runs)
-          stroke --validate            parse config.toml; exit 0 if valid
+          wand --validate            parse config.toml; exit 0 if valid
             [--items <PATH>]           also validate a standalone items
                                        file (for --show-menu)
-          stroke --doctor              health check: Accessibility, config,
+          wand --doctor              health check: Accessibility, config,
                                        daemon, event tap, tuning + rules
-          stroke --test PATTERN [APP]  dry-run: which rule would fire for
+          wand --test PATTERN [APP]  dry-run: which rule would fire for
                                        a pattern (optionally for a bundle id)
-          stroke --record              interactive recorder: draw a gesture,
+          wand --record              interactive recorder: draw a gesture,
                                        get a paste-ready [[rules]] snippet
                                        on stdout. Refuses if the daemon is
                                        running (would fight over the tap).
-          stroke --resign              re-sign Stroke.app with the persistent
-                                       "stroke Local Signing" identity + restart
+          wand --resign              re-sign Wand.app with the persistent
+                                       "wand Local Signing" identity + restart
                                        (run once after `brew install` / upgrade)
-          stroke --help                this help
+          wand --help                this help
 
         EXIT CODES
           0   success
@@ -70,12 +70,12 @@ enum WandApp {
               --record with a daemon running
 
         CONFIG
-          ~/.config/stroke/config.toml is the single source of truth.
-          stroke never writes to it; runtime CLI flags affect the
+          ~/.config/wand/config.toml is the single source of truth.
+          wand never writes to it; runtime CLI flags affect the
           current session only.
 
         DOCS
-          https://github.com/akira-toriyama/stroke
+          https://github.com/akira-toriyama/wand
         """
         print(help)
         exit(0)
@@ -97,7 +97,7 @@ enum WandApp {
         }
 
         // Two-pass: reject ANY unknown flag *before* dispatching a
-        // recognised one, so `stroke --reload --typo` fails loudly on
+        // recognised one, so `wand --reload --typo` fails loudly on
         // --typo instead of silently acting on --reload and never
         // looking at the rest (no silent fallback — the loud-reject
         // policy must hold even when flags are combined).
@@ -122,8 +122,8 @@ enum WandApp {
                 continue
             }
             if !recognised.contains(a) {
-                let msg = "stroke: unknown flag \"\(a)\" — see "
-                    + "`stroke --help`\n"
+                let msg = "wand: unknown flag \"\(a)\" — see "
+                    + "`wand --help`\n"
                 FileHandle.standardError.write(Data(msg.utf8))
                 exit(2)
             }
@@ -139,7 +139,7 @@ enum WandApp {
                   + "(\(cfg.launcher.items.count) item(s))"
                 : ""
             FileHandle.standardError.write(Data((
-                "stroke: loaded \(cfg.rules.count) rule(s), "
+                "wand: loaded \(cfg.rules.count) rule(s), "
                 + "trigger=\(cfg.trigger.button.rawValue), "
                 + "minStrokePx=\(cfg.minStrokePx)\(launcherLine)\n"
             ).utf8))
@@ -150,13 +150,13 @@ enum WandApp {
                 guard let text = try? String(contentsOfFile: path, encoding: .utf8)
                 else {
                     FileHandle.standardError.write(Data((
-                        "stroke: --items: could not read \(path)\n"
+                        "wand: --items: could not read \(path)\n"
                     ).utf8))
                     exit(2)
                 }
                 let items = WandConfig.parseItems(text)
                 FileHandle.standardError.write(Data((
-                    "stroke: items file \(path) — "
+                    "wand: items file \(path) — "
                     + "\(items.count) item(s)\n"
                 ).utf8))
             }
@@ -304,13 +304,13 @@ enum WandApp {
             "  \(ok ? "✓" : "✗")  \(label.padding(toLength: 16, withPad: " ", startingAt: 0))\(detail)"
         }
         var ok = true
-        print("stroke doctor")
+        print("wand doctor")
 
         let ax = AXTarget.isTrusted()
         ok = ok && ax
         print(line(ax, "Accessibility:",
                    ax ? "granted"
-                      : "NOT granted — open Stroke.app and grant it in "
+                      : "NOT granted — open Wand.app and grant it in "
                         + "System Settings → Privacy & Security → Accessibility"))
 
         let fileExists = FileManager.default.fileExists(atPath: WandConfig.path)
@@ -324,7 +324,7 @@ enum WandApp {
 
         let running = isServerRunning()
         print(line(running, "Daemon:",
-                   running ? "running" : "not running — start with `stroke`"))
+                   running ? "running" : "not running — start with `wand`"))
 
         let tap = MacOSMouseSource.canInstallTap()
         ok = ok && tap
@@ -382,7 +382,7 @@ enum WandApp {
     private static func runTest(pattern: String, bundleID: String?) -> Never {
         guard !pattern.isEmpty else {
             FileHandle.standardError.write(Data(
-                "usage: stroke --test PATTERN [bundle-id]\n".utf8))
+                "usage: wand --test PATTERN [bundle-id]\n".utf8))
             exit(2)
         }
         let cfg = WandConfig.load()
@@ -448,25 +448,25 @@ enum WandApp {
     private static func runStatus() -> Never {
         guard isServerRunning() else {
             FileHandle.standardError.write(Data((
-                "stroke: --status needs a running daemon (it reads the "
+                "wand: --status needs a running daemon (it reads the "
                 + "status file the daemon maintains). Start one with "
-                + "`stroke` first.\n"
+                + "`wand` first.\n"
             ).utf8))
             exit(3)
         }
         if let s = try? String(contentsOfFile: statusPath, encoding: .utf8) {
             print(s)
         } else {
-            print("stroke: running (status file not written yet)")
+            print("wand: running (status file not written yet)")
         }
         exit(0)
     }
 
 
-    /// `stroke --resign` re-signs the installed Stroke.app with the
-    /// persistent `stroke Local Signing` self-signed identity and
+    /// `wand --resign` re-signs the installed Wand.app with the
+    /// persistent `wand Local Signing` self-signed identity and
     /// restarts the daemon. Necessary after every `brew install` /
-    /// `brew upgrade stroke`, because Homebrew's build sandbox
+    /// `brew upgrade wand`, because Homebrew's build sandbox
     /// blocks the in-formula `setup-signing-cert.sh` from touching
     /// the user's login keychain — install falls back to ad-hoc
     /// signing and TCC re-prompts for Accessibility on every
@@ -475,79 +475,79 @@ enum WandApp {
     /// Exit codes:
     ///   0 — re-signed (restart attempted, best-effort)
     ///   1 — codesign failed
-    ///   2 — no Stroke.app found in any expected location
+    ///   2 — no Wand.app found in any expected location
     ///   3 — signing identity missing (run setup-signing-cert.sh first)
     private static func runResign() -> Never {
-        guard let appPath = findStrokeApp() else {
+        guard let appPath = findWandApp() else {
             FileHandle.standardError.write(Data((
-                "stroke: no Stroke.app found at "
-                + "/opt/homebrew/Cellar/stroke/*/, /Applications, "
+                "wand: no Wand.app found at "
+                + "/opt/homebrew/Cellar/wand/*/, /Applications, "
                 + "or ~/Applications.\n"
                 + "        install via "
-                + "`brew install akira-toriyama/tap/stroke` or "
+                + "`brew install akira-toriyama/tap/wand` or "
                 + "package locally first.\n"
             ).utf8))
             exit(2)
         }
-        print("stroke: detected Stroke.app at \(appPath)")
+        print("wand: detected Wand.app at \(appPath)")
 
-        let identity = "stroke Local Signing"
+        let identity = "wand Local Signing"
         guard hasSigningIdentity(identity) else {
             let setupHint = setupCertHint()
             FileHandle.standardError.write(Data((
-                "stroke: no '\(identity)' identity in your login keychain.\n"
+                "wand: no '\(identity)' identity in your login keychain.\n"
                 + "        run once:\n"
                 + "          \(setupHint)\n"
-                + "          stroke --resign\n"
+                + "          wand --resign\n"
             ).utf8))
             exit(3)
         }
 
-        print("stroke: signing with identity '\(identity)'")
+        print("wand: signing with identity '\(identity)'")
         let codesignExit = runProcess(
             "/usr/bin/codesign",
             args: ["--force", "--sign", identity, appPath])
         guard codesignExit == 0 else {
             FileHandle.standardError.write(Data((
-                "stroke: codesign failed (exit \(codesignExit))\n"
+                "wand: codesign failed (exit \(codesignExit))\n"
             ).utf8))
             exit(1)
         }
 
-        print("stroke: restarting daemon")
+        print("wand: restarting daemon")
         let brewExit = runProcess(
             "/opt/homebrew/bin/brew",
-            args: ["services", "restart", "stroke"],
+            args: ["services", "restart", "wand"],
             captureOutput: true)
         if brewExit == 0 {
-            print("stroke: restarted via `brew services restart stroke`")
+            print("wand: restarted via `brew services restart wand`")
             exit(0)
         }
-        // Only `homebrew.mxcl.stroke` — stroke doesn't ship an
-        // in-repo LaunchAgent template, so no `com.stroke.stroke`
+        // Only `homebrew.mxcl.wand` — wand doesn't ship an
+        // in-repo LaunchAgent template, so no `com.wand.wand`
         // label exists in the wild. Adding it as a fallback was
         // dead code (kickstart would always 113 / no such service).
-        let label = "homebrew.mxcl.stroke"
+        let label = "homebrew.mxcl.wand"
         let kick = runProcess(
             "/bin/launchctl",
             args: ["kickstart", "-k", "gui/\(getuid())/\(label)"],
             captureOutput: true)
         if kick == 0 {
-            print("stroke: restarted via `launchctl kickstart \(label)`")
+            print("wand: restarted via `launchctl kickstart \(label)`")
             exit(0)
         }
         FileHandle.standardError.write(Data((
-            "stroke: re-signed, but couldn't restart the daemon — "
+            "wand: re-signed, but couldn't restart the daemon — "
             + "start it manually.\n"
         ).utf8))
         exit(0)
     }
 
-    /// Pick the first existing Stroke.app from the canonical install
+    /// Pick the first existing Wand.app from the canonical install
     /// locations. The brew Cellar (which carries the live binary) is
     /// preferred over manual /Applications copies.
-    private static func findStrokeApp() -> String? {
-        let cellar = "/opt/homebrew/Cellar/stroke"
+    private static func findWandApp() -> String? {
+        let cellar = "/opt/homebrew/Cellar/wand"
         if let versions = try? FileManager.default.contentsOfDirectory(atPath: cellar) {
             // `.numeric` makes "2.10.0" > "2.2.0" — a plain string
             // sort would silently pick the older 2.2.0 as "latest"
@@ -556,13 +556,13 @@ enum WandApp {
                 a.compare(b, options: .numeric) == .orderedDescending
             }
             for v in sorted {
-                let p = "\(cellar)/\(v)/Stroke.app"
+                let p = "\(cellar)/\(v)/Wand.app"
                 if FileManager.default.fileExists(atPath: p) { return p }
             }
         }
         for candidate in [
-            "/Applications/Stroke.app",
-            "\(NSHomeDirectory())/Applications/Stroke.app",
+            "/Applications/Wand.app",
+            "\(NSHomeDirectory())/Applications/Wand.app",
         ] {
             if FileManager.default.fileExists(atPath: candidate) {
                 return candidate
@@ -585,9 +585,9 @@ enum WandApp {
 
     /// Best-effort guess at where `setup-signing-cert.sh` lives on
     /// the user's machine. brew installs ship it under
-    /// `share/stroke/`, dev installs have it at the repo root.
+    /// `share/wand/`, dev installs have it at the repo root.
     private static func setupCertHint() -> String {
-        let brewShared = "/opt/homebrew/share/stroke/setup-signing-cert.sh"
+        let brewShared = "/opt/homebrew/share/wand/setup-signing-cert.sh"
         if FileManager.default.fileExists(atPath: brewShared) {
             return brewShared
         }
@@ -616,7 +616,7 @@ enum WandApp {
             return p.terminationStatus
         } catch {
             FileHandle.standardError.write(Data(
-                "stroke: couldn't launch \(executable): \(error)\n".utf8))
+                "wand: couldn't launch \(executable): \(error)\n".utf8))
             return -1
         }
     }
@@ -630,7 +630,7 @@ enum WandApp {
         return argv[i + 1]
     }
 
-    /// `stroke --show-menu --items <PATH> --at <X> <Y> [--selection <TEXT>]`
+    /// `wand --show-menu --items <PATH> --at <X> <Y> [--selection <TEXT>]`
     /// — external trigger entry to the launcher menu. Validates args
     /// locally (exit 2 on bad input), checks daemon liveness (exit 3),
     /// then posts a DNC notification with the parameters in userInfo
@@ -640,7 +640,7 @@ enum WandApp {
     private static func runShowMenu(argv: [String]) -> Never {
         guard let itemsPath = valueAfter("--items", in: argv) else {
             FileHandle.standardError.write(Data((
-                "stroke: --show-menu: --items <PATH> is required\n"
+                "wand: --show-menu: --items <PATH> is required\n"
             ).utf8))
             exit(2)
         }
@@ -652,7 +652,7 @@ enum WandApp {
             : FileManager.default.currentDirectoryPath + "/" + absItems
         guard let text = try? String(contentsOfFile: absPath, encoding: .utf8) else {
             FileHandle.standardError.write(Data((
-                "stroke: --show-menu: could not read items file "
+                "wand: --show-menu: could not read items file "
                 + "\(absPath)\n"
             ).utf8))
             exit(2)
@@ -662,9 +662,9 @@ enum WandApp {
         let items = WandConfig.parseItems(text)
         guard !items.isEmpty else {
             FileHandle.standardError.write(Data((
-                "stroke: --show-menu: items file \(absPath) yielded "
+                "wand: --show-menu: items file \(absPath) yielded "
                 + "0 items (no `[[item]]` rows, or all dropped — see "
-                + "/tmp/stroke.log for per-row diagnostics)\n"
+                + "/tmp/wand.log for per-row diagnostics)\n"
             ).utf8))
             exit(2)
         }
@@ -674,7 +674,7 @@ enum WandApp {
               let x = Double(argv[i + 1]),
               let y = Double(argv[i + 2]) else {
             FileHandle.standardError.write(Data((
-                "stroke: --show-menu: --at <X> <Y> is required "
+                "wand: --show-menu: --at <X> <Y> is required "
                 + "(Cocoa screen coords, Y-up)\n"
             ).utf8))
             exit(2)
@@ -683,8 +683,8 @@ enum WandApp {
 
         guard isServerRunning() else {
             FileHandle.standardError.write(Data((
-                "stroke: --show-menu: no daemon running — start it "
-                + "with `stroke` (or `stroke --debug`) first\n"
+                "wand: --show-menu: no daemon running — start it "
+                + "with `wand` (or `wand --debug`) first\n"
             ).utf8))
             exit(3)
         }
@@ -708,8 +708,8 @@ enum WandApp {
     private static func runClient(cmd: String) -> Never {
         guard isServerRunning() else {
             FileHandle.standardError.write(Data((
-                "stroke: no daemon running — start it with "
-                + "`stroke` (or `stroke --debug`) first\n"
+                "wand: no daemon running — start it with "
+                + "`wand` (or `wand --debug`) first\n"
             ).utf8))
             exit(3)
         }
@@ -722,15 +722,15 @@ enum WandApp {
         exit(0)
     }
 
-    /// `true` when another stroke server process is currently
+    /// `true` when another wand server process is currently
     /// running. Uses `pgrep` (part of macOS — no extra deps).
     /// Self-aware: this process's own pid is excluded so a
     /// client-mode invocation doesn't mis-detect itself.
     private static func isServerRunning() -> Bool {
         let myPid = ProcessInfo.processInfo.processIdentifier
-        // Covers both raw SwiftPM builds (`.build/debug/stroke` etc.)
-        // and a future bundled `stroke.app/Contents/MacOS/stroke`.
-        let patterns = ["/Contents/MacOS/stroke", "\\.build/.*/stroke"]
+        // Covers both raw SwiftPM builds (`.build/debug/wand` etc.)
+        // and the bundled `Wand.app/Contents/MacOS/wand`.
+        let patterns = ["/Contents/MacOS/wand", "\\.build/.*/wand"]
         for pattern in patterns {
             let p = Process()
             p.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
@@ -765,8 +765,8 @@ enum WandApp {
     private static func runRecord() -> Never {
         if isServerRunning() {
             FileHandle.standardError.write(Data((
-                "stroke: daemon is running — `stroke --quit` first, "
-                + "then `stroke --record`\n"
+                "wand: daemon is running — `wand --quit` first, "
+                + "then `wand --record`\n"
             ).utf8))
             exit(3)
         }
@@ -813,7 +813,7 @@ enum WandApp {
         }
 
         FileHandle.standardError.write(Data((
-            "stroke --record: draw gestures with the configured "
+            "wand --record: draw gestures with the configured "
             + "trigger button (\(cfg.trigger.button.rawValue) mouse, "
             + "minStrokePx=\(cfg.minStrokePx)). Ctrl-C to exit.\n"
         ).utf8))

@@ -186,7 +186,7 @@ public enum AXTarget {
     }
 
 
-    /// Current trust state, without prompting — for `stroke --doctor`.
+    /// Current trust state, without prompting — for `wand --doctor`.
     public static func isTrusted() -> Bool { AXIsProcessTrusted() }
 
     /// Ensure Accessibility is granted; prompt the user if not.
@@ -199,7 +199,7 @@ public enum AXTarget {
         let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         if !AXIsProcessTrustedWithOptions(opts) {
             FileHandle.standardError.write(Data(
-                "stroke: grant Accessibility, then relaunch.\n".utf8))
+                "wand: grant Accessibility, then relaunch.\n".utf8))
             Log.line("AX: not yet trusted — opening System Settings → "
                      + "Privacy & Security → Accessibility")
             // Jump the user straight to the right pane instead of

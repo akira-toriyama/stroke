@@ -1,5 +1,5 @@
 // Translucent gesture-trail HUD — the project's only on-screen UI
-// (stroke is otherwise headless / LSUIElement). Lives in the adapter
+// (wand is otherwise headless / LSUIElement). Lives in the adapter
 // layer next to EventTap because it's pure AppKit/CG rendering fed by
 // the sample stream; Core stays UI-free (points cross the seam as
 // plain `CGPoint`). Threading: `addPoint` / `clear` fire on the

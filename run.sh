@@ -1,24 +1,24 @@
 #!/bin/zsh
-# Build + launch a stroke .app bundle locally. Defaults to release
-# (Stroke.app, com.stroke.stroke) — the bundle you'd actually use
-# day to day. ``--dev`` builds the parallel Stroke-dev.app
-# (com.stroke.stroke.dev) for verification alongside a Homebrew
+# Build + launch a wand .app bundle locally. Defaults to release
+# (Wand.app, com.wand.wand) — the bundle you'd actually use
+# day to day. ``--dev`` builds the parallel Wand-dev.app
+# (com.wand.wand.dev) for verification alongside a Homebrew
 # install without TCC grant collisions.
 #
-#   ./run.sh             release → Stroke.app
-#   ./run.sh --dev       dev     → Stroke-dev.app
+#   ./run.sh             release → Wand.app
+#   ./run.sh --dev       dev     → Wand-dev.app
 #
-# Always kills any currently-running stroke first (via stop.sh) so
+# Always kills any currently-running wand first (via stop.sh) so
 # the new bundle takes over cleanly. Quit later: ``./stop.sh`` or
-# ``stroke --quit``.
+# ``wand --quit``.
 set -e
 cd "$(dirname "$0")"
 
 MODE=""
-APP="Stroke.app"
+APP="Wand.app"
 if [[ "${1:-}" == "--dev" ]]; then
     MODE="--dev"
-    APP="Stroke-dev.app"
+    APP="Wand-dev.app"
 fi
 
 ./package.sh $MODE

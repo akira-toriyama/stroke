@@ -1,9 +1,11 @@
 // swift-tools-version:6.0
 //
 // wand — macOS daemon for cursor-anchored mouse automation.
-// Currently ships the gesture trigger (formerly the standalone
-// `stroke` project, hence the `stroke` binary name we still expose);
-// the launcher trigger lands as a sibling feature.
+// Ships two trigger families on one daemon:
+//   - gesture (mouse button + drag — the original `stroke` project's
+//     feature; "stroke" remains the domain term for a drawn gesture)
+//   - launcher (middle-click + contextual NSMenu)
+// Both dispatch actions against the cursor-anchored window.
 //
 // Architecture is hexagonal (Ports & Adapters), mirroring facet's
 // three-layer split. See docs/architecture.md for the diagram.
@@ -33,7 +35,7 @@ let package = Package(
     name: "wand",
     platforms: [.macOS(.v13)],
     products: [
-        .executable(name: "stroke", targets: ["WandApp"]),
+        .executable(name: "wand", targets: ["WandApp"]),
         .library(name: "WandCore", targets: ["WandCore"]),
     ],
     targets: [
