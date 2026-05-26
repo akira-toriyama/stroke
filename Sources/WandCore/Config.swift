@@ -315,9 +315,11 @@ public struct WandConfig: Sendable {
         let apps = row.strings("apps")
         let group = row.strings("group")
         let sep = row.bool("separator-before", false)
+        let icon = row.string("icon")
         return LauncherItem(
             name: name, group: group, separatorBefore: sep,
-            apps: apps.isEmpty ? ["*"] : apps, action: action)
+            apps: apps.isEmpty ? ["*"] : apps,
+            icon: icon, action: action)
     }
 
     private static func parseAction(_ row: [String: TOMLValue]) -> Action? {

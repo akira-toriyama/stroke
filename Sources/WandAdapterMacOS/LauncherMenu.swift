@@ -67,9 +67,92 @@ public enum LauncherMenu {
                                 keyEquivalent: "")
             mi.target = actionTarget
             mi.representedObject = item
+            if !item.icon.isEmpty {
+                mi.image = resolveItemIcon(item.icon)
+            }
             parent.addItem(mi)
         }
         return root
+    }
+
+    /// Item-icon resolution. See `LauncherItem.icon` for the
+    /// recognised string forms. Returns nil (which collapses to no
+    /// image on the menu row) on miss; logs once so a typo is
+    /// visible in `/tmp/wand.log` without spamming on every popup.
+    private static func resolveItemIcon(_ spec: String) -> NSImage? {
+        let pt: CGFloat = 18  // match the app-header glyph size
+
+        // SF Symbol prefix
+        if spec.hasPrefix("SF:") {
+            let name = String(spec.dropFirst(3))
+            let cfg = NSImage.SymbolConfiguration(pointSize: pt,
+                                                   weight: .regular)
+            guard let img = NSImage(systemSymbolName: name,
+                                     accessibilityDescription: nil)?
+                .withSymbolConfiguration(cfg) else {
+                Log.line("launcher-menu: unknown SF Symbol \"\(name)\" "
+                         + "in item icon — falling back to no icon")
+                return nil
+            }
+            return img
+        }
+
+        // File path — absolute, tilde, or relative to the config dir.
+        let looksLikePath = spec.hasPrefix("/")
+            || spec.hasPrefix("~")
+            || spec.contains("/")
+            || spec.hasSuffix(".png")
+            || spec.hasSuffix(".jpg")
+            || spec.hasSuffix(".jpeg")
+            || spec.hasSuffix(".gif")
+            || spec.hasSuffix(".tiff")
+            || spec.hasSuffix(".icns")
+        if looksLikePath {
+            let path = resolveIconPath(spec)
+            guard let img = NSImage(contentsOfFile: path) else {
+                Log.line("launcher-menu: could not load item icon "
+                         + "from \(path) — falling back to no icon")
+                return nil
+            }
+            img.size = NSSize(width: pt, height: pt)
+            return img
+        }
+
+        // Text / emoji — draw the glyph into an NSImage.
+        return textIcon(spec, pointSize: pt)
+    }
+
+    private static func resolveIconPath(_ spec: String) -> String {
+        if spec.hasPrefix("/") { return spec }
+        if spec.hasPrefix("~") {
+            return (spec as NSString).expandingTildeInPath
+        }
+        // Relative — resolve against the config file's directory.
+        let configDir = (WandConfig.path as NSString)
+            .deletingLastPathComponent
+        return "\(configDir)/\(spec)"
+    }
+
+    /// Render `text` (typically 1-2 chars, often emoji) into an
+    /// NSImage at `pointSize` × `pointSize`. Used when the item
+    /// `icon` field isn't an SF Symbol or a file path.
+    private static func textIcon(_ text: String,
+                                  pointSize pt: CGFloat) -> NSImage? {
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: pt * 0.85),
+        ]
+        let attributed = NSAttributedString(string: text, attributes: attrs)
+        let measured = attributed.size()
+        guard measured.width > 0 && measured.height > 0 else { return nil }
+        let size = NSSize(width: pt, height: pt)
+        let img = NSImage(size: size)
+        img.lockFocus()
+        let origin = NSPoint(
+            x: (size.width - measured.width) / 2,
+            y: (size.height - measured.height) / 2)
+        attributed.draw(at: origin)
+        img.unlockFocus()
+        return img
     }
 
     /// Disabled NSMenuItem showing the target app's icon + name.

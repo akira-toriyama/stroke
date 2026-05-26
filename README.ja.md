@@ -74,17 +74,25 @@ button = "middle"                 # "middle" / "side1" / "side2" / "right"
 
 [[item]]
 name = "新規タブ"
+icon = "🌐"                        # emoji / SF:<name> / ファイルパス
 apps = ["*chrome*", "*safari*"]
 action-type = "key"
 action-keys = "cmd+t"
 
 [[item]]
 name = "名前順"
+icon = "SF:textformat.abc"         # macOS SF Symbol
 group = ["並び替え"]               # 「並び替え」サブメニュー配下
 separator-before = true            # 行の上にセパレータ
 action-type = "shell"
 action-cmd = "echo name"
 ```
+
+`icon` の書式: `"🌐"`(絵文字 / 1〜2 文字テキスト)、`"SF:globe"`
+(SF Symbol — macOS 11+)、`"~/icons/foo.png"` または
+`"icons/foo.png"`(相対パスは `~/.config/wand/` 基準)、
+`"/abs/path.png"`(絶対パス)。解決できない値はアイコンなしに
+フォールバック(`/tmp/wand.log` にログ)。
 
 ## インストール
 
