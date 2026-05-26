@@ -48,6 +48,10 @@ public final class GestureOverlay {
 
         let w = NSWindow(contentRect: frame, styleMask: .borderless,
                          backing: .buffered, defer: false)
+        // Force dark appearance so the `.menu` NSVisualEffectMaterial
+        // renders dark even when the system is in light mode — matches
+        // the launcher's NSMenu (which also forces darkAqua).
+        w.appearance = NSAppearance(named: .darkAqua)
         w.isOpaque = false
         w.backgroundColor = .clear
         w.hasShadow = false
@@ -293,7 +297,10 @@ private final class TrailView: NSView {
     /// transparent.
     private let blurView: NSVisualEffectView = {
         let v = NSVisualEffectView()
-        v.material = .hudWindow
+        // `.menu` (not `.hudWindow`) so the vibrant frost matches the
+        // launcher's NSMenu look — same color/translucency the system
+        // uses for context menus.
+        v.material = .menu
         v.blendingMode = .behindWindow
         v.state = .active
         v.wantsLayer = true

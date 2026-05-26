@@ -36,7 +36,7 @@ body:
         2026-… AX: resolved point=… via ax-walk → com.google.Chrome wid=88641
         2026-… event-tap: up — samples=572, pattern=DL
         2026-… controller: recognised DL on com.google.Chrome
-        2026-… controller: → rule "タブを閉じる"
+        2026-… controller: → rule "close tab"
         2026-… dispatch.key: cmd+w → com.google.Chrome (pid 38558, wid 88641)
       render: text
     validations:

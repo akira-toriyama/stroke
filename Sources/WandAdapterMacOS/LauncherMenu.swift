@@ -45,7 +45,7 @@ public enum LauncherMenu {
     private static func buildMenu(_ items: [LauncherItem],
                                    target: Target,
                                    actionTarget: MenuActionTarget) -> NSMenu {
-        let root = NSMenu()
+        let root = darkMenu()
         // App-icon header so the user sees which window the menu is
         // acting on — the cursor-anchored target is often NOT the
         // focused app, and an unmarked "閉じる" would be ambiguous.
@@ -87,7 +87,7 @@ public enum LauncherMenu {
                 if !item.icon.isEmpty {
                     header.image = resolveItemIcon(item.icon)
                 }
-                let sub = NSMenu(title: item.name)
+                let sub = darkMenu(title: item.name)
                 for child in DynamicItems.expand(
                     parent: item, actionTarget: actionTarget) {
                     sub.addItem(child)
@@ -212,13 +212,27 @@ public enum LauncherMenu {
     /// Returns nil only if the bundle id resolves to no localized
     /// name AND no icon (rare for the cursor-anchored target).
     private static func makeAppHeader(for target: Target) -> NSMenuItem? {
+        // App icons (.icns) ship with transparent padding around the
+        // squircle, so at the same pt size they render visibly smaller
+        // than SF Symbols / glyphs. Bump to 22pt so the header reads
+        // as the same optical size as the row icons (18pt).
         let (name, icon) = AppIconCache.shared.lookup(
-            bundleID: target.bundleID, iconSize: 18)
+            bundleID: target.bundleID, iconSize: 22)
         if name.isEmpty && icon == nil { return nil }
         let header = NSMenuItem(title: name, action: nil, keyEquivalent: "")
         header.isEnabled = false
         header.image = icon
         return header
+    }
+
+    /// NSMenu forced to dark appearance so the launcher matches the
+    /// gesture overlay's dark look even when the system is in light
+    /// mode. macOS still applies vibrancy / translucency over the
+    /// background — pure-black requires an NSPanel rewrite.
+    private static func darkMenu(title: String = "") -> NSMenu {
+        let m = NSMenu(title: title)
+        m.appearance = NSAppearance(named: .darkAqua)
+        return m
     }
 
     /// Walk down `path`, creating folder NSMenuItems as needed.
@@ -234,7 +248,7 @@ public enum LauncherMenu {
                 continue
             }
             let folder = NSMenuItem(title: segment, action: nil, keyEquivalent: "")
-            let sub = NSMenu(title: segment)
+            let sub = darkMenu(title: segment)
             folder.submenu = sub
             current.addItem(folder)
             cache[key] = sub
