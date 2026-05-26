@@ -155,7 +155,7 @@ private enum PanelLayout {
 
     static func makeHeaderSpec(for target: Target) -> HeaderSpec? {
         let (name, icon) = AppIconCache.shared.lookup(
-            bundleID: target.bundleID, iconSize: 16)
+            bundleID: target.bundleID, iconSize: ItemRow.iconRenderPt)
         if name.isEmpty && icon == nil { return nil }
         return HeaderSpec(name: name, icon: icon)
     }
@@ -367,13 +367,19 @@ private enum PanelLayout {
     /// the row) on miss; logs once so a typo is visible in
     /// `/tmp/wand.log` without spamming every popup.
     static func resolveItemIcon(_ spec: String) -> NSImage? {
-        let pt: CGFloat = 16
+        let pt: CGFloat = ItemRow.iconRenderPt
 
         // SF Symbol prefix.
         if spec.hasPrefix("SF:") {
             let name = String(spec.dropFirst(3))
-            let cfg = NSImage.SymbolConfiguration(pointSize: pt,
-                                                   weight: .regular)
+            // `.medium` weight + `.large` scale together: each symbol
+            // fills more of its bounding box optically, so glyphs with
+            // a lot of internal whitespace (gear, camera, folder) no
+            // longer read as smaller than tight ones (lock, magnifying
+            // glass). Without this, child panels filled with whitespace-
+            // heavy symbols look "shrunk" next to a parent of tight ones.
+            let cfg = NSImage.SymbolConfiguration(
+                pointSize: pt, weight: .medium, scale: .large)
             guard let img = NSImage(systemSymbolName: name,
                                      accessibilityDescription: nil)?
                 .withSymbolConfiguration(cfg) else {
@@ -660,8 +666,15 @@ private final class ItemRow: NSView {
     private let iconView = NSImageView()
     private let titleField = NSTextField(labelWithString: "")
     private var chevronView: NSImageView?
-    private static let iconSize: CGFloat = 16
-    private static let rowHeight: CGFloat = 24
+    /// Bounding box in points for the icon view. The actual rendered
+    /// SF Symbol is sized to `iconRenderPt` and scaled `.large`, so it
+    /// fills the box optically.
+    private static let iconSize: CGFloat = 17
+    /// `pointSize` passed to `NSImage.SymbolConfiguration` — see the
+    /// comment in `PanelLayout.resolveItemIcon` for why this is paired
+    /// with `.medium` weight + `.large` scale.
+    static let iconRenderPt: CGFloat = 17
+    private static let rowHeight: CGFloat = 26
     private static let idleCornerRadius: CGFloat = 4
     private static let hoverCornerRadius: CGFloat = 5
 
