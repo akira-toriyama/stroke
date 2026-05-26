@@ -75,16 +75,16 @@ enabled = true
 button = "middle"                 # or "side1" / "side2" / "right"
 
 [[launcher.item]]
-name = "新規タブ"
+name = "New Tab"
 icon = "🌐"                        # emoji / SF:<name> / file path
 apps = ["*chrome*", "*safari*"]
 action-type = "key"
 action-keys = "cmd+t"
 
 [[launcher.item]]
-name = "名前順"
+name = "By Name"
 icon = "SF:textformat.abc"         # macOS SF Symbol
-group = ["並び替え"]               # nests this row inside a "並び替え" submenu
+group = ["Sort"]                   # nests this row inside a "Sort" submenu
 separator-before = true            # divider line above the row
 action-type = "shell"
 action-cmd = "echo name"
@@ -101,7 +101,7 @@ becomes one child item with `{line}` substituted in the template:
 
 ```toml
 [[launcher.item]]
-name = "ブランチ切替"
+name = "Switch Branch"
 icon = "SF:point.3.connected.trianglepath.dotted"
 dynamic = 'cd ~/repo && git branch --format="%(refname:short)"'
 template-name = "{line}"
@@ -119,7 +119,7 @@ Items can also carry a **checkmark state** via `state`:
 
 ```toml
 [[launcher.item]]
-name = "ダークモード"
+name = "Dark Mode"
 state = "shell:defaults read -g AppleInterfaceStyle 2>/dev/null | grep -q Dark"
 action-type = "shell"
 action-cmd  = "..."
@@ -145,7 +145,7 @@ that decides at match time whether the row applies. Both work on
 
 ```toml
 [[launcher.item]]
-name = "Issue を PR にする"
+name = "Open as PR"
 icon = "SF:arrow.triangle.pull"
 apps = ["*chrome*"]
 filter-title = "*github.com*/issues/*"      # only on a GitHub issue
@@ -153,7 +153,7 @@ action-type = "url"
 action-url = "..."
 
 [[launcher.item]]
-name = "深夜限定リマインダ"
+name = "Late-night ping"
 filter-shell = "test $(date +%H) -ge 22"    # only after 22:00
 action-type = "shell"
 action-cmd  = "afplay /System/Library/Sounds/Glass.aiff"

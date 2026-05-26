@@ -321,7 +321,7 @@ action-verb = "minimize"
 #
 # # Basic row:
 # [[launcher.item]]
-# name = "新規タブ"
+# name = "New Tab"
 # icon = "🌐"
 # apps = ["*chrome*", "*safari*"]
 # action-type = "key"
@@ -329,7 +329,7 @@ action-verb = "minimize"
 #
 # # Separator before this row + SF Symbol icon:
 # [[launcher.item]]
-# name = "再読み込み"
+# name = "Reload"
 # icon = "SF:arrow.clockwise"
 # apps = ["*chrome*", "*safari*"]
 # separator-before = true
@@ -340,8 +340,8 @@ action-verb = "minimize"
 # # submenu. The folder is created on first reference; subsequent
 # # items with the same group land inside it.
 # [[launcher.item]]
-# name = "名前順"
-# group = ["並び替え"]
+# name = "By Name"
+# group = ["Sort"]
 # action-type = "shell"
 # action-cmd = "echo name"
 #
@@ -354,7 +354,7 @@ action-verb = "minimize"
 # # in a shell command, quote it: 'git switch "{line}"', not
 # # 'git switch {line}'.
 # [[launcher.item]]
-# name = "ブランチ切替"
+# name = "Switch Branch"
 # icon = "SF:point.3.connected.trianglepath.dotted"
 # dynamic = 'cd ~/repo && git branch --format="%(refname:short)"'
 # template-name = "{line}"
@@ -368,7 +368,7 @@ action-verb = "minimize"
 # # 100ms timeout (state should be a cheap check; longer probes
 # # belong in `dynamic` items).
 # [[launcher.item]]
-# name = "ダークモード"
+# name = "Dark Mode"
 # state = "shell:defaults read -g AppleInterfaceStyle 2>/dev/null | grep -q Dark"
 # action-type = "shell"
 # action-cmd  = "osascript -e 'tell app \"System Events\" to keystroke \"d\" using {control down, option down, command down}'"
