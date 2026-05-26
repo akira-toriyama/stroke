@@ -189,6 +189,12 @@ public struct WandConfig: Sendable {
             ?? .middle
         let launcherMods = Set(lr.strings("modifiers")
             .compactMap { Modifier(rawValue: $0.lowercased()) })
+        // `mode` picks the UI surface: native NSMenu (default,
+        // keyboard nav + submenus) or non-activating NSPanel (PopClip
+        // parity, no focus capture). Unknown values log + clamp to
+        // `.menu`.
+        let launcherMode: LauncherMode = parseEnum(
+            lr, key: "mode", section: "launcher", default: .menu)
 
         // [[launcher.item]] — launcher menu rows. Same drop-on-typo
         // policy as [[gesture.rule]]: bad rows surface in the log
@@ -198,6 +204,7 @@ public struct WandConfig: Sendable {
         let launcher = LauncherSpec(
             enabled: launcherEnabled,
             trigger: Trigger(button: launcherButton, modifiers: launcherMods),
+            mode: launcherMode,
             items: items)
 
         // [[gesture.rule]] — gesture pattern → action mappings.

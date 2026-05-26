@@ -136,6 +136,20 @@ public struct LauncherItem: Sendable, Equatable {
     }
 }
 
+/// Which UI surface the launcher uses.
+/// - `.menu`  — native `NSMenu`. Keyboard navigation, submenus,
+///              dynamic items, state markers all work. Modal: takes
+///              keyboard focus from the underlying app.
+/// - `.panel` — non-activating `NSPanel` (PopClip parity). Does NOT
+///              take keyboard focus, so the user can keep typing in
+///              the underlying editor while the launcher is up. No
+///              keyboard navigation; submenu / dynamic / state are
+///              flattened or skipped in MVP scope.
+public enum LauncherMode: String, Sendable, Hashable, CaseIterable {
+    case menu
+    case panel
+}
+
 /// The whole `[launcher]` block. `trigger` lives here(not the top-
 /// level `[trigger]` which gestures own) so each family has its own
 /// button. `enabled = false` keeps the tap from being installed at
@@ -143,17 +157,22 @@ public struct LauncherItem: Sendable, Equatable {
 public struct LauncherSpec: Sendable, Equatable {
     public let enabled: Bool
     public let trigger: Trigger
+    public let mode: LauncherMode
     public let items: [LauncherItem]
 
-    public init(enabled: Bool, trigger: Trigger, items: [LauncherItem]) {
+    public init(enabled: Bool, trigger: Trigger,
+                mode: LauncherMode = .menu,
+                items: [LauncherItem]) {
         self.enabled = enabled
         self.trigger = trigger
+        self.mode = mode
         self.items = items
     }
 
     public static let `default` = LauncherSpec(
         enabled: false,
         trigger: Trigger(button: .middle, modifiers: []),
+        mode: .menu,
         items: []
     )
 }

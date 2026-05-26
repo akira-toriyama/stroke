@@ -23,7 +23,13 @@ public enum LauncherMenu {
     public static func present(filteredItems items: [LauncherItem],
                                 target: Target,
                                 cocoaPoint: NSPoint,
+                                mode: LauncherMode = .menu,
                                 onSelect: @escaping (LauncherItem, Target) -> Void) {
+        if mode == .panel {
+            LauncherPanel.present(filteredItems: items, target: target,
+                                  cocoaPoint: cocoaPoint, onSelect: onSelect)
+            return
+        }
         guard !items.isEmpty else {
             Log.line("launcher-menu: no items for \(target.bundleID) — "
                      + "menu suppressed")

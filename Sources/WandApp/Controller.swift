@@ -179,7 +179,8 @@ public final class Controller: @unchecked Sendable {
         LauncherMenu.present(
             filteredItems: visibleItems,
             target: event.target,
-            cocoaPoint: ScreenCoords.cocoaPoint(fromCG: event.point)
+            cocoaPoint: ScreenCoords.cocoaPoint(fromCG: event.point),
+            mode: cfg.launcher.mode
         ) { [weak self] item, target in
             self?.counterLauncherDispatched += 1
             Log.line("controller: → launcher item \"\(item.name)\"")
@@ -242,7 +243,8 @@ public final class Controller: @unchecked Sendable {
         LauncherMenu.present(
             filteredItems: visible,
             target: target,
-            cocoaPoint: cocoaPoint
+            cocoaPoint: cocoaPoint,
+            mode: cfg.launcher.mode
         ) { [weak self] item, target in
             self?.counterShowMenuDispatched += 1
             Log.line("controller: → show-menu item \"\(item.name)\"")
