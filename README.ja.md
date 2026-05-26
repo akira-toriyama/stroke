@@ -134,6 +134,25 @@ AX target が無い場所でも menu が出る(アプリ特定アイテムは
 自動で除外)。Spotlight / 画面ロック / "ターミナルを開く" 等の
 システム横断機能の置き場として最適。
 
+### 選択テキストを使う shell アイテム(`$SELECTION`)
+
+shell アクションには、中ボタン押下時にフォーカス要素で選択されて
+いたテキストが `$SELECTION` 環境変数として渡される。何も選択して
+いない、または対象アプリが AX に選択テキストを露出していない場合
+は空。翻訳 / 検索 / 他アプリへ渡す系のワークフローに使える:
+
+```toml
+[[launcher.item]]
+name = "Translate"
+icon = "SF:globe"
+action-type = "shell"
+action-cmd = 'open "https://translate.google.com/?sl=auto&tl=en&text=$(printf %s "$SELECTION" | sed "s/ /%20/g")"'
+```
+
+shell コマンド内では必ず `"$SELECTION"` のようにクオートする —
+内容はユーザーがハイライトした任意の文字列(URL / コード / shell
+メタ文字を含みうる)で、`WAND_TARGET_TITLE` と同じく **untrusted**。
+
 ### 条件フィルタ(`filter-title` / `filter-shell`)
 
 `apps` で「どのアプリの行か」を決め、**`filter-title`** で
