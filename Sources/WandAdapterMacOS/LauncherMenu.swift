@@ -212,8 +212,12 @@ public enum LauncherMenu {
     /// Returns nil only if the bundle id resolves to no localized
     /// name AND no icon (rare for the cursor-anchored target).
     private static func makeAppHeader(for target: Target) -> NSMenuItem? {
+        // App icons (.icns) ship with transparent padding around the
+        // squircle, so at the same pt size they render visibly smaller
+        // than SF Symbols / glyphs. Bump to 22pt so the header reads
+        // as the same optical size as the row icons (18pt).
         let (name, icon) = AppIconCache.shared.lookup(
-            bundleID: target.bundleID, iconSize: 18)
+            bundleID: target.bundleID, iconSize: 22)
         if name.isEmpty && icon == nil { return nil }
         let header = NSMenuItem(title: name, action: nil, keyEquivalent: "")
         header.isEnabled = false
