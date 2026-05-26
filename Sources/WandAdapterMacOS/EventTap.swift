@@ -199,18 +199,27 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
             Log.line("event-tap: [recognition] config swapped mid-stroke "
                      + "— cancelling the in-progress gesture to keep "
                      + "recognition state consistent")
-            capturing = false
-            samples.removeAll(keepingCapacity: true)
-            currentTarget = nil
-            cancelled = false
-            reversalTimes.removeAll(keepingCapacity: true)
-            lastDirCount = 0
-            onStrokeEnd?()
+            forceStrokeEnd()
         }
         minStrokePx = cfg.minStrokePx
         maxSegmentMs = cfg.maxSegmentMs
         cancelReversals = cfg.cancelReversals
         cancelWindowMs = cfg.cancelWindowMs
+    }
+
+    /// Drop all in-progress stroke state without firing recognition
+    /// or dispatch — used by paths that need to abandon mid-gesture
+    /// (mid-stroke config reload, tap-disable recovery). `onStrokeEnd`
+    /// clears the overlay trail so the user sees the gesture cancel
+    /// visually. Precondition: caller has logged the reason.
+    private func forceStrokeEnd() {
+        capturing = false
+        samples.removeAll(keepingCapacity: true)
+        currentTarget = nil
+        cancelled = false
+        reversalTimes.removeAll(keepingCapacity: true)
+        lastDirCount = 0
+        onStrokeEnd?()
     }
 
 
@@ -226,6 +235,20 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
             // single lines — readable, not a flood.
             Log.line("event-tap: re-enabled after disable "
                      + "(\(type.rawValue))")
+            // Defensive cleanup: any in-progress stroke was orphaned
+            // while the tap was off — we won't have seen the real
+            // `.rightMouseUp` that would have cleared `capturing`. If
+            // we leave `capturing = true`, the `.mouseMoved` short-
+            // circuit above will consume every subsequent move event
+            // forever, breaking unrelated mouse activity (notably
+            // left-button drag-and-drop in Chrome / Electron apps,
+            // where the drag visualization depends on `.mouseMoved`
+            // landing in the app's event queue). See `forceStrokeEnd`.
+            if capturing {
+                Log.line("event-tap: in-progress stroke aborted by "
+                         + "tap-disable — clearing capturing state")
+                forceStrokeEnd()
+            }
             return Unmanaged.passUnretained(event)
         }
 
