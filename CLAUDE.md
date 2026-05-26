@@ -99,6 +99,11 @@ ws-tabs.
   folders are created on first reference, then memoised so repeats
   of the same path append into the same submenu. Don't promote
   this to a separate module — same reasoning as `GestureOverlay`.
+  `resolveItemIcon` is the per-item icon resolver — recognises
+  `SF:<name>` (NSImage.systemSymbolName), file paths (absolute /
+  tilde / config-dir-relative), or falls back to drawing the string
+  as a glyph (emoji / 1-2 char text). Unresolvable specs log once
+  and collapse to no-icon; never throws.
 - **The gesture-trail overlay lives in `WandAdapterMacOS`**, not a
   separate View module ([Sources/WandAdapterMacOS/GestureOverlay.swift](Sources/WandAdapterMacOS/GestureOverlay.swift)).
   It's the project's only on-screen UI; it's pure AppKit/CG rendering

@@ -76,17 +76,24 @@ button = "middle"                 # or "side1" / "side2" / "right"
 
 [[item]]
 name = "新規タブ"
+icon = "🌐"                        # emoji / SF:<name> / file path
 apps = ["*chrome*", "*safari*"]
 action-type = "key"
 action-keys = "cmd+t"
 
 [[item]]
-name = "並び替え > 名前順"
+name = "名前順"
+icon = "SF:textformat.abc"         # macOS SF Symbol
 group = ["並び替え"]               # nests this row inside a "並び替え" submenu
 separator-before = true            # divider line above the row
 action-type = "shell"
 action-cmd = "echo name"
 ```
+
+Item `icon` syntax: `"🌐"` (emoji / 1-2 char text glyph), `"SF:globe"`
+(SF Symbol — macOS 11+), `"~/icons/foo.png"` / `"icons/foo.png"`
+(path; relative paths resolve against `~/.config/wand/`), or
+`"/abs/path.png"`. Unrecognised values fall back to no icon.
 
 ## Install
 

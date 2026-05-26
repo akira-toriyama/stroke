@@ -38,15 +38,32 @@ public struct LauncherItem: Sendable, Equatable {
     /// anchored target. Items whose filter excludes the current
     /// target are pruned from the menu before it is shown.
     public let apps: [String]
+    /// Optional icon spec. Resolved by the adapter at menu-build
+    /// time. Recognised forms:
+    ///   - `""` (empty) — no icon
+    ///   - `"SF:<name>"` — SF Symbol (e.g. `SF:globe`, macOS 11+).
+    ///   - `"/abs/path.png"` — absolute file path
+    ///   - `"~/relative.png"` — tilde-expanded path
+    ///   - `"icons/foo.png"` — path relative to `~/.config/wand/`
+    ///     (or whatever directory holds the config that defined
+    ///     this item — the adapter resolves against `WandConfig.
+    ///     path`'s parent)
+    ///   - anything else — drawn as a text/emoji glyph (1-2 chars
+    ///     is typical: `"🌐"`, `"⚡"`, `"AI"`)
+    /// Unresolvable specs log once and fall through to no-icon.
+    public let icon: String
     public let action: Action
 
     public init(name: String, group: [String] = [],
                 separatorBefore: Bool = false,
-                apps: [String] = ["*"], action: Action) {
+                apps: [String] = ["*"],
+                icon: String = "",
+                action: Action) {
         self.name = name
         self.group = group
         self.separatorBefore = separatorBefore
         self.apps = apps
+        self.icon = icon
         self.action = action
     }
 }
