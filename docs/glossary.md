@@ -1,3 +1,10 @@
+---
+title: wand 用語集
+tags: [glossary, macos, gesture, launcher]
+repo: wand
+aliases: []
+---
+
 # 用語集 — wand のユビキタス言語
 
 wand を構成する各パーツの **正規の呼び名** をまとめた規範ドキュメント。
@@ -85,14 +92,14 @@ wand を構成する各パーツの **正規の呼び名** をまとめた規範
 - **Don't call it:** modal, popup, window, menu, dialog, モーダル, ポップアップ, ダイアログ, ウィンドウ
 
 ### child panel
-`group = [...]` を持つ行にホバーした時、non-activating panel の **隣** に
+`group = [...]` を持つ行にホバーした時、[[non-activating panel]] の **隣** に
 開くサブメニュー。non-activating の性質は親パネルから引き継ぐ。
 - コード: `PanelController.openChild`
 - **Don't call it:** submenu, dropdown, flyout, nested menu, サブメニュー, ドロップダウン
 
 ### launcher item
-1 つの `[[launcher.item]]` エントリ。non-activating panel もしくは
-child panel に並ぶ 1 行を指す。静的なもの、`group` で child panel に
+1 つの `[[launcher.item]]` エントリ。[[non-activating panel]] もしくは
+[[child panel]] に並ぶ 1 行を指す。静的なもの、`group` で child panel に
 展開されるもの、`dynamic` でメニュー展開時に行を生成するものがある。
 - 設定: `[[launcher.item]]`
 - **Don't call it:** entry, row, button, command, action, 項目, ボタン, アクション
@@ -100,7 +107,7 @@ child panel に並ぶ 1 行を指す。静的なもの、`group` で child panel
 ### dynamic submenu
 `dynamic = "<shell>"` を持つ `launcher item` が、メニュー展開時に
 シェルコマンドを実行し、その標準出力 1 行 = 1 子行として
-`template-*` フィールドを適用して生成する child panel。500ms の
+`template-*` フィールドを適用して生成する [[child panel]]。500ms の
 ハードタイムアウトあり。
 - 設定: `[[launcher.item]]` で `dynamic` 指定時
 - **Don't call it:** generated submenu, shell submenu, computed menu, 動的メニュー
@@ -124,7 +131,7 @@ child panel に並ぶ 1 行を指す。静的なもの、`group` で child panel
 
 ### `$SELECTION`
 ランチャートリガー発火の瞬間に、フォーカスされている要素で選択
-されていたテキスト。`shell` 系 launcher item に環境変数として
+されていたテキスト。`shell` 系 [[launcher item]] に環境変数として
 渡される。何も選択されていない場合、もしくはフォーカス先のアプリ
 が AX selection を公開していない場合は空文字列。**信頼できない値**
 としてシェル内では必ずクォートすること。
