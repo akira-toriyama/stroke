@@ -236,7 +236,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
             // Promoted to Log.line: a flapping tap is a real symptom
             // (system load, handler too slow) the user should be able
-            // to see without `--debug`. Repeated firings are still
+            // to see without WAND_DEBUG. Repeated firings are still
             // single lines — readable, not a flood.
             Log.line("event-tap: re-enabled after disable "
                      + "(\(type.rawValue))")
@@ -415,7 +415,7 @@ public final class MacOSMouseSource: MouseSource, @unchecked Sendable {
             replayClick(at: downPoint)
             let (dx, dy) = captured.span
             // `Log.line` so the diagnostic ("samples=N, max|dx|=…,
-            // threshold=…") is visible without `--debug`. This is the
+            // threshold=…") is visible without WAND_DEBUG. This is the
             // single most useful line for "I drew but nothing fired" —
             // the CLAUDE.md runbook reads it as the interpretation map.
             Log.line("event-tap: no stroke recognised on "

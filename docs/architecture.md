@@ -96,7 +96,7 @@ to honour the convention.
 | Flag | Mode | Purpose |
 |---|---|---|
 | *(none)* | server | run the agent (CGEventTap loop) |
-| `--debug` | server | mirror logs to stderr too |
+| `WAND_DEBUG=1` (env, not a flag) | server | mirror logs to stderr too (run.sh sets it; raw/brew launch stays quiet) |
 | `--validate` | standalone | parse `~/.config/stroke/config.toml`, exit 0/2 |
 | `--record` | standalone | interactive recorder; refuses if daemon running |
 | `--reload` | client | tell running daemon to re-read config |

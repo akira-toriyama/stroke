@@ -287,7 +287,7 @@ match   = "fireworks"   # ボタン離しで発動したカード
 
 ```sh
 wand                    # agent として常駐(CGEventTap loop)
-wand --debug            # 詳細ログを /tmp/wand.log + stderr へ
+WAND_DEBUG=1 wand       # 詳細ログを /tmp/wand.log + stderr へ
 
 wand --validate         # config.toml をパース、0 / 2 で exit
 wand --doctor           # 健康診断: AX / config / daemon / tap
