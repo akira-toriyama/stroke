@@ -323,8 +323,10 @@ Everything below depends on this contract:
 - **`Log` lives in `WandCore`** so both the Adapter and App
   modules can call it without crossing layer rules. Two
   functions: `Log.line` (always on) and `Log.debug` (gated by
-  `debugMode`, set from `wand --debug` at startup).
-- **Both write to `/tmp/wand.log`**; `--debug` also mirrors to
+  `debugMode`, set from the `WAND_DEBUG` env var at startup —
+  run.sh sets it; a brew/raw launch leaves it unset and stays
+  quiet. There is no `--debug` flag).
+- **Both write to `/tmp/wand.log`**; `WAND_DEBUG` also mirrors to
   stderr so foreground users see events live.
 - **Use `Log.debug` liberally** in EventTap / dispatch hot paths.
   It costs one bool check when disabled. Skip per-sample logging
@@ -337,10 +339,11 @@ The agent cannot "look at the screen" to see what it's doing — so
 the daemon is built to be debuggable entirely from the terminal.
 The workflow:
 
-1. **Run in the foreground with `--debug`** so events stream live:
-   `.build/debug/wand --debug`. This sets `debugMode = true`
+1. **Run in the foreground with `WAND_DEBUG=1`** so events stream live:
+   `WAND_DEBUG=1 .build/debug/wand`. This sets `debugMode = true`
    (enables `Log.debug`) and mirrors every log line to stderr in
-   addition to `/tmp/wand.log`.
+   addition to `/tmp/wand.log`. (run.sh sets `WAND_DEBUG` for the
+   `.app` launch automatically.)
 2. **Tail the log** from a second shell: `tail -f /tmp/wand.log`.
    This is the single source of observability — there is nothing
    else to inspect.
@@ -405,11 +408,13 @@ stray instances before relaunching.
 
 ### CLI surface
 
-- **Flags**: `--debug` (server, verbose), `--validate` /
-  `--doctor` / `--test` / `--record` / `--help` (standalone),
-  `--reload` / `--quit` / `--status` (client). Any unrecognised
-  flag exits `2` with a stderr message (no silent fallback —
-  facet's *Rule of Repair* discipline). **`--test` takes an operand**
+- **Flags**: `--validate` / `--doctor` / `--test` / `--record` /
+  `--help` (standalone), `--reload` / `--quit` / `--status`
+  (client). Verbose logging is triggered by the `WAND_DEBUG` env
+  var, not a flag — there is no `--debug` flag (passing it exits
+  `2` like any unknown flag). Any unrecognised flag exits `2` with
+  a stderr message (no silent fallback — facet's *Rule of Repair*
+  discipline). **`--test` takes an operand**
   (the pattern), so it's handled *before* the unknown-flag scan would
   reject that operand — keep that ordering if adding more
   value-taking flags.

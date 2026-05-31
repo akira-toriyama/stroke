@@ -8,7 +8,7 @@ body:
       value: |
         Thanks for the report. The most useful single thing you can attach is the
         output of `wand --doctor` plus the relevant tail of `/tmp/wand.log`
-        (run the daemon with `wand --debug` for a full trace).
+        (run the daemon with `WAND_DEBUG=1 wand` for a full trace).
 
   - type: textarea
     id: doctor

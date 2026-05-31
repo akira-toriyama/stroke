@@ -297,7 +297,7 @@ default is `normal`.
 
 ```sh
 wand                    # run as agent (CGEventTap loop)
-wand --debug            # verbose log to /tmp/wand.log + stderr
+WAND_DEBUG=1 wand       # verbose log to /tmp/wand.log + stderr
 
 wand --validate         # parse config.toml, exit 0/2
 wand --doctor           # health check: Accessibility, config, daemon, tap

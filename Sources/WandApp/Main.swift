@@ -25,9 +25,9 @@ enum WandApp {
           wand [COMMAND]             one-shot client command
 
         SERVER MODE
-          wand                       run as agent
-          wand --debug               verbose log to stderr +
-                                       /tmp/wand.log
+          wand                       run as agent. Set WAND_DEBUG=1 in the
+                                       environment for verbose log to stderr
+                                       + /tmp/wand.log (run.sh sets it).
 
         CLIENT COMMANDS — need a running daemon (exit 3 if none)
           wand --reload              re-read ~/.config/wand/config.toml
@@ -88,8 +88,13 @@ enum WandApp {
     static func main() {
         let argv = Array(CommandLine.arguments.dropFirst())
 
+        // Debug logging is triggered by the WAND_DEBUG env var (set by
+        // run.sh), NOT a CLI flag — run.sh and a brew/raw launch start the
+        // same artifact, so the signal is injected at launch time. A normal
+        // launch sets nothing and stays quiet; `--debug` on argv now exits 2.
+        debugMode = ProcessInfo.processInfo.environment["WAND_DEBUG"] != nil
+
         if argv.contains("--help") { printHelp() }
-        if argv.contains("--debug") { debugMode = true }
 
         // `--test PATTERN [bundle-id]` consumes operands, so handle it
         // before the unknown-flag scan would reject that pattern.
@@ -106,7 +111,7 @@ enum WandApp {
         // looking at the rest (no silent fallback — the loud-reject
         // policy must hold even when flags are combined).
         let recognised: Set<String> = [
-            "--help", "--debug", "--validate", "--record",
+            "--help", "--validate", "--record",
             "--reload", "--quit", "--status", "--doctor",
             "--resign", "--show-menu",
             "--items", "--at", "--selection", "--title",
@@ -708,7 +713,7 @@ enum WandApp {
         guard isServerRunning() else {
             FileHandle.standardError.write(Data((
                 "wand: --show-menu: no daemon running — start it "
-                + "with `wand` (or `wand --debug`) first\n"
+                + "with `wand` (or `WAND_DEBUG=1 wand`) first\n"
             ).utf8))
             exit(3)
         }
@@ -734,7 +739,7 @@ enum WandApp {
         guard isServerRunning() else {
             FileHandle.standardError.write(Data((
                 "wand: no daemon running — start it with "
-                + "`wand` (or `wand --debug`) first\n"
+                + "`wand` (or `WAND_DEBUG=1 wand`) first\n"
             ).utf8))
             exit(3)
         }

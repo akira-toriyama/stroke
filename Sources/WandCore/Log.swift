@@ -1,11 +1,11 @@
 // Two-level log: `Log.line` always-on, `Log.debug` gated by
-// `debugMode` (set once at startup from `--debug`). Both write to
-// /tmp/wand.log; stderr only mirrors under --debug so a
-// backgrounded `wand &` doesn't pollute the launching shell.
+// `debugMode` (set once at startup from the WAND_DEBUG env var). Both
+// write to /tmp/wand.log; stderr only mirrors when WAND_DEBUG is set so
+// a backgrounded `wand &` doesn't pollute the launching shell.
 
 import Foundation
 
-/// Write-once at startup from `--debug`. Never mutated after that.
+/// Write-once at startup from the WAND_DEBUG env var. Never mutated after that.
 nonisolated(unsafe) public var debugMode = false
 
 public enum Log {

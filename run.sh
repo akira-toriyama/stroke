@@ -24,5 +24,9 @@ fi
 ./package.sh $MODE
 ./stop.sh
 sleep 0.5
-open "./$APP"
-echo "$APP launched. Grant Accessibility on first run."
+# run.sh always sets WAND_DEBUG so the dev loop's /tmp/wand.log is verbose
+# (and mirrored to stderr). A normal/brew/raw launch sets nothing and stays
+# quiet — there is no --debug flag. `open` does not inherit the shell env,
+# so the var must be passed explicitly via --env.
+open "./$APP" --env WAND_DEBUG=1
+echo "$APP launched (WAND_DEBUG=1). Grant Accessibility on first run."

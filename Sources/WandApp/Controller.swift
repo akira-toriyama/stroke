@@ -112,7 +112,7 @@ public final class Controller: @unchecked Sendable {
         guard !dirs.isEmpty else {
             // Reachable only if EventTap and Controller disagree on
             // recognition — i.e. either threshold drift after reload, or
-            // a real bug. Either way it's worth surfacing without --debug.
+            // a real bug. Either way it's worth surfacing without WAND_DEBUG.
             Log.line("controller: EventTap delivered but Recognition "
                      + "found 0 directions on \(target.bundleID) "
                      + "(samples=\(event.samples.count), "
